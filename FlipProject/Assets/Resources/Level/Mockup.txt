@@ -1,0 +1,32 @@
+; Object shorthands: (Mostly follow original FLIP)
+;  EMPTY: .
+;  MIRROR: - / | \
+;  GENERATOR: 0 1 2 3 4 5 6 7 8 9
+;  SLUICE: ^ < v >
+;  PROCESS: X
+;  TARPIT: + *
+;  INPUT: i
+;  OUTPUT: o
+;  WALL: #
+Size 12
+
+Tools 5
+- 99
+0 99
+^ 99
+X 99
++ 99
+
+Preset
+......#####.
+.i.\.#01234#
+..vXv#56789#
+/.+.<o#####.
+............
+..>v.^<.....
+\.X..>^ ....
+..>*.../\...
+.....^./\\..
+...>...\//..
+.......\/...
+............

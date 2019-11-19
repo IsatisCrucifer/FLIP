@@ -5,20 +5,6 @@ using UnityEngine;
 
 public static class Extensions
 {
-	public static string ContentToString<T>(this T ts) where T : IEnumerable
-	{
-		string s = "[";
-		bool first = true;
-		foreach (var elem in ts)
-		{
-			if (!first) s += ", ";
-			s += elem.ToString();
-			first = false;
-		}
-		s += "]";
-		return s;
-	}
-
 	#region Integer extensions
 	public static bool IsInRange<T>(this T value, T lower, T upper) where T : IComparable
 	{
@@ -33,23 +19,6 @@ public static class Extensions
 	public static int DecrementModM(this int value, int modulus)
 	{
 		return (value + modulus - 1) % modulus;
-	}
-	#endregion
-
-	#region Board extensions
-	public static bool IsEmpty(this Board.Cell cell)
-	{
-		return cell.type == Board.CellType.EMPTY;
-	}
-
-	public static Board.Cell RotateForward(this Board.Cell cell)
-	{
-		return Board.RotateCellForward(cell);
-	}
-
-	public static Board.Cell RotateBackward(this Board.Cell cell)
-	{
-		return Board.RotateCellBackward(cell);
 	}
 	#endregion
 

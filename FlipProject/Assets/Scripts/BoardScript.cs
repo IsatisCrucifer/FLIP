@@ -11,7 +11,7 @@ public class BoardScript : MonoBehaviour,
 	IBeginDragHandler, IDragHandler, IEndDragHandler
 {
 	// Possible public Unity interface
-	private int BoardSize = 12;
+	public static TextAsset levelAsset;
 
 	// Unity UI Objects
 	private struct ToolGameObjects
@@ -54,9 +54,6 @@ public class BoardScript : MonoBehaviour,
 	// The Sprite
 	Sprite[] SpriteTools;
 
-	// Tools in a level. This will be set by LoadLevel().
-	private Level TheLevel;
-
 	// The Board & Gamestate
 	private Board TheBoard;
 	private BoardPosition MouseDownPos;
@@ -98,49 +95,53 @@ public class BoardScript : MonoBehaviour,
 		TMBoard = GameObject.Find("Grid/BoardTilemap").GetComponent<Tilemap>();
 
 		GODragIcon = GameObject.Find("DragIcon");
-		
+
+		// Get the mockup level; TODO comment this when other levels are required
+		levelAsset = Resources.Load<TextAsset>("Level/Mockup");
+
 		LoadLevel();
 	}
 
 	void Update()
 	{
-		for (int i = 0; i < TheLevel.Tools.Length; i++)
+		for (int i = 0; i < TheBoard.Tools.Length; i++)
 		{
-			if (TheLevel.Tools[i].Count < 0)
+			if (TheBoard.Tools[i].Count < 0)
 				LGOTools[i].TextAmount.text = "INF";
 			else
-				LGOTools[i].TextAmount.text = TheLevel.Tools[i].Count.ToString();
+				LGOTools[i].TextAmount.text = TheBoard.Tools[i].Count.ToString();
 		}
 	}
 	#endregion
 
 	/// <summary>
-	/// (Mock) Load the level.
-	/// This may be replaced later to load different levels.
+	/// Load the level from levelAsset.
 	/// </summary>
 	private void LoadLevel()
 	{
-		TheLevel = Level.GetMockLevel();
+		TheBoard = new Board(levelAsset.text);
 
 		for (int i = 0; i < LGOTools.Count; i++)
 		{
-			if (i >= TheLevel.Tools.Length)
+			if (i >= TheBoard.Tools.Length)
 			{
 				LGOTools[i].GOTool.SetActive(false);
 			}
 			else
 			{
-				LGOTools[i].ImageIcon.sprite = CellToSprite(TheLevel.Tools[i].NewCell);
+				LGOTools[i].ImageIcon.sprite = CellToSprite(TheBoard.Tools[i].NewCell);
 				LGOTools[i].TextAmount.text = "INF";
 			}
 		}
 
-		TheBoard = new Board(BoardSize, BoardSize);
 		IsDragging = false;
 
-		foreach (Level.CellPreset presetItem in TheLevel.Preset)
+		for (int x = TheBoard.MinX; x <= TheBoard.MaxX; x++)
 		{
-			SetBoardAndTile(presetItem.Position, presetItem.Cell);
+			for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
+			{
+				TMBoard.SetTile(new Vector3Int(x, y, 0), CellToTile(TheBoard[x, y]));
+			}
 		}
 	}
 
@@ -175,8 +176,8 @@ public class BoardScript : MonoBehaviour,
 			switch(place)
 			{
 				case Place.OUTSIDE: return "OUTSIDE";
-				case Place.BOARD: return string.Format("BOARD ({0}, {1})", x, y);
-				case Place.TOOLBOX: return string.Format("TOOLBOX #{0}", x);
+				case Place.BOARD: return $"BOARD ({x}, {y})";
+				case Place.TOOLBOX: return $"TOOLBOX #{x}";
 				default: return "?????";
 			}
 		}
@@ -229,7 +230,7 @@ public class BoardScript : MonoBehaviour,
 			if (pos.place == BoardPosition.Place.TOOLBOX)
 			{
 				int toolID = pos.x;
-				Board.Cell NewCell = TheLevel.TakeTool(toolID);
+				Board.Cell NewCell = TheBoard.TakeTool(toolID);
 				if (!NewCell.IsEmpty())
 				{
 					DraggingCell = NewCell;
@@ -294,7 +295,7 @@ public class BoardScript : MonoBehaviour,
 		else
 		{
 			// Drop outside board, try to return the item to toolbox
-			if (!TheLevel.ReturnTool(DraggingCell))
+			if (!TheBoard.ReturnTool(DraggingCell))
 			{
 				// Item cannot be returned, spring back to original position
 				SetBoardAndTile(DraggingFrom, DraggingCell);
