@@ -20,6 +20,11 @@ public static class Extensions
 	{
 		return (value + modulus - 1) % modulus;
 	}
+
+	public static int ModM(this int value, int modulus)
+	{
+		return (value % modulus + modulus) % modulus;
+	}
 	#endregion
 
 	// Extend Unity Vector2/3/4 so one can only "change" one component of the vector

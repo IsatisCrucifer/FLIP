@@ -1,23 +1,60 @@
-; Object shorthands: (Mostly follow original FLIP)
-;  EMPTY: .
-;  MIRROR: - / | \
-;  GENERATOR: 0 1 2 3 4 5 6 7 8 9
-;  SLUICE: ^ < v >
-;  PROCESS: X
-;  TARPIT: + *
-;  INPUT: i
-;  OUTPUT: o
-;  WALL: #
-Size 12
+--[[
+This is a Lua script.
 
-Tools 5
-- 99
-0 99
-^ 99
-X 99
-+ 99
+API:
+SetSize(number size):
+	Set board size. Should be called before SetPreset.
+AddTool(string object, number count):
+	Add a tool for this level to use.
+	Use the following shorthands for object.
+SetPreset(string board)
+	A multiline string describe the board.
+	Use the following shorthand for each cell.
+	Empty line will be ignored.
 
-Preset
+Implementation:
+GetIO(function randomizer)
+	Using given randomizer to generate two lists,
+	the first one is the input and the second one is corresponding output.
+	The randomizer has the following interface:
+		randomizer(number max):
+			Return a random integer between 0 (inclusive) and max (exclusive). It is pre-seeded.
+
+Object shorthands: (Mostly follow original FLIP)
+ EMPTY: .
+ MIRROR: - / | \
+ GENERATOR: 0 1 2 3 4 5 6 7 8 9
+ SLUICE: ^ < v >
+ PROCESS: X
+ TARPIT: + *
+ INPUT: i
+ OUTPUT: o
+ WALL: #
+]]
+
+SetSize(12)
+AddTool("-", 99)
+AddTool("0", 99)
+AddTool("^", 99)
+AddTool("X", 99)
+AddTool("+", 99)
+--[==[
+SetPreset([[
+............
+..../..\....
+..i.X....o..
+....\..+....
+............
+............
+............
+............
+............
+............
+............
+............
+]])
+]==]
+SetPreset([[
 ......#####.
 .i.\.#01234#
 ..vXv#56789#
@@ -30,3 +67,17 @@ Preset
 ...>...\//..
 .......\/...
 ............
+]])
+
+function GetIO(randomizer)
+	local input, output
+	input = {}
+	output = {}
+	for i = 1, 20 do
+		local value = randomizer(10)
+		table.insert(input, value)
+		table.insert(output, value)
+	end
+	return input, output
+end
+
