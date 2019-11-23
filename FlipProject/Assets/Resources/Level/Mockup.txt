@@ -76,7 +76,7 @@ function GetIO(randomizer)
 	for i = 1, 20 do
 		local value = randomizer(10)
 		table.insert(input, value)
-		table.insert(output, value)
+		table.insert(output, value * value * 4)
 	end
 	return input, output
 end

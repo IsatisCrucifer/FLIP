@@ -11,7 +11,7 @@ public class BoardScript : MonoBehaviour,
 	IBeginDragHandler, IDragHandler, IEndDragHandler
 {
 	// Possible public Unity interface
-	public static TextAsset levelAsset;
+	public static TextAsset levelAsset = null;
 
 	// Unity UI Objects
 	private struct ToolGameObjects
@@ -25,11 +25,11 @@ public class BoardScript : MonoBehaviour,
 	private Camera MainCamera;
 	private Tilemap TMBoard;
 
-	private GameObject GORunButton, GOStopButton;
-	private GameObject GOSpeedSlider;
-	private GameObject GODragIcon;
+	private Image ImageRunButton, ImageStopButton;
+	private Slider SpeedSlider;
+	private Transform DragIcon;
 	private GameObject GOPhotonTemplate;
-	private Transform GOPhotonScaler;
+	private Transform PhotonScaler;
 	private Dictionary<int, GameObject> GOPhotons;
 
 	// Enum index into sprite
@@ -107,17 +107,18 @@ public class BoardScript : MonoBehaviour,
 
 		TMBoard = GameObject.Find("Grid/BoardTilemap").GetComponent<Tilemap>();
 
-		GORunButton = GameObject.Find("RunButton");
-		GOStopButton = GameObject.Find("StopButton");
-		GOSpeedSlider = GameObject.Find("SpeedSlider");
+		ImageRunButton = GameObject.Find("RunButton").GetComponent<Image>();
+		ImageStopButton = GameObject.Find("StopButton").GetComponent<Image>();
+		SpeedSlider = GameObject.Find("SpeedSlider").GetComponent<Slider>();
 		GOPhotonTemplate = GameObject.Find("Photon Template");
-		GOPhotonScaler = GOPhotonTemplate.transform.parent;
-		GODragIcon = GameObject.Find("DragIcon");
+		PhotonScaler = GOPhotonTemplate.transform.parent;
+		DragIcon = GameObject.Find("DragIcon").transform;
 
 		GOPhotons = new Dictionary<int, GameObject>();
 
-		// Get the mockup level; TODO comment this when other levels are required
-		levelAsset = Resources.Load<TextAsset>("Level/Mockup");
+		// Get the mockup level if no level is set
+		if (levelAsset is null)
+			levelAsset = Resources.Load<TextAsset>("Level/Mockup");
 
 		LoadLevel();
 	}
@@ -151,7 +152,7 @@ public class BoardScript : MonoBehaviour,
 						GOThisPhoton = Instantiate(GOPhotonTemplate);
 						GOThisPhoton.SetActive(true);
 						GOThisPhoton.transform.localScale = new Vector3(2, 2, 1);
-						GOThisPhoton.transform.SetParent(GOPhotonScaler);
+						GOThisPhoton.transform.SetParent(PhotonScaler);
 						GOThisPhoton.GetComponent<SpriteRenderer>().sortingOrder = kv.Key;
 						GOPhotons[kv.Key] = GOThisPhoton;
 						//Debug.Log($"Generated new UI Object Photon {kv.Key}");
@@ -324,9 +325,9 @@ public class BoardScript : MonoBehaviour,
 		} while (false);
 		IsDragging = true;
 		Sprite draggingSprite = CellToSprite(DraggingCell);
-		GODragIcon.SetActive(true);
-		GODragIcon.GetComponent<SpriteRenderer>().sprite = draggingSprite;
-		GODragIcon.transform.position = MainCamera.ScreenToWorldPoint((Vector3)eventData.position).SetZ(0);
+		DragIcon.gameObject.SetActive(true);
+		DragIcon.GetComponent<SpriteRenderer>().sprite = draggingSprite;
+		DragIcon.position = MainCamera.ScreenToWorldPoint((Vector3)eventData.position).SetZ(0);
 		//Debug.LogFormat("OnBeginDrag: Event position = {0}", eventData.position));
 	}
 
@@ -334,7 +335,7 @@ public class BoardScript : MonoBehaviour,
 	{
 		if (IsRunning) return;
 		if (!IsDragging) return;
-		GODragIcon.transform.position = MainCamera.ScreenToWorldPoint((Vector3)eventData.position).SetZ(0);
+		DragIcon.position = MainCamera.ScreenToWorldPoint((Vector3)eventData.position).SetZ(0);
 	}
 
 	public void OnEndDrag(PointerEventData eventData)
@@ -373,7 +374,7 @@ public class BoardScript : MonoBehaviour,
 				SetBoardAndTile(DraggingFrom, DraggingCell);
 			}
 		}
-		GODragIcon.SetActive(false);
+		DragIcon.gameObject.SetActive(false);
 		IsDragging = false;
 	}
 
@@ -408,7 +409,14 @@ public class BoardScript : MonoBehaviour,
 	#region Button Handler
 	public void AdjustSimulationSpeed()
 	{
-		SimulationSpeed = Mathf.Pow(2f, GOSpeedSlider.GetComponent<Slider>().value);
+		float sliderValue = SpeedSlider.value;
+		// Snap to integer if within 0.05
+		if (Mathf.Abs(Mathf.Round(sliderValue) - sliderValue) < 0.05f)
+		{
+			sliderValue = Mathf.Round(sliderValue);
+			SpeedSlider.value = sliderValue;
+		}
+		SimulationSpeed = Mathf.Pow(2f, sliderValue);
 	}
 
 	public void StartSimulation()
@@ -418,14 +426,14 @@ public class BoardScript : MonoBehaviour,
 			if(!IsRunning) SimulationTime = 0;
 			IsRunning = true;
 			IsPausing = false;
-			GORunButton.GetComponent<Image>().sprite = SpriteButtons[1];
-			GOStopButton.GetComponent<Image>().sprite = SpriteButtons[2];
+			ImageRunButton.sprite = SpriteButtons[1];
+			ImageStopButton.sprite = SpriteButtons[2];
 			TheBoard.Start(42);
 		}
 		else
 		{
 			IsPausing = true;
-			GORunButton.GetComponent<Image>().sprite = SpriteButtons[0];
+			ImageRunButton.sprite = SpriteButtons[0];
 		}
 	}
 
@@ -434,8 +442,8 @@ public class BoardScript : MonoBehaviour,
 		if (!IsRunning) return;
 		IsRunning = IsPausing = false;
 		TheBoard.Stop();
-		GORunButton.GetComponent<Image>().sprite = SpriteButtons[0];
-		GOStopButton.GetComponent<Image>().sprite = SpriteButtons[3];
+		ImageRunButton.sprite = SpriteButtons[0];
+		ImageStopButton.sprite = SpriteButtons[3];
 		foreach (var kv in GOPhotons)
 		{
 			Destroy(kv.Value);
