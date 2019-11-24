@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 8b71e30d0d41c6446a473d8e8c49f391
+guid: 9d5f25a292f22d94f8d084c49f90ef79
 TrueTypeFontImporter:
   externalObjects: {}
   serializedVersion: 4
@@ -8,9 +8,9 @@ TrueTypeFontImporter:
   characterSpacing: 0
   characterPadding: 1
   includeFontData: 1
-  fontName: Fixedsys Excelsior
+  fontName: JackeyFont
   fontNames:
-  - Fixedsys Excelsior
+  - JackeyFont
   fallbackFontReferences: []
   customCharacters: 
   fontRenderingMode: 2
