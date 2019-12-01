@@ -44,3 +44,6 @@ TagManager:
   - name: Photons
     uniqueID: 1333377787
     locked: 0
+  - name: Dialog
+    uniqueID: 1060176133
+    locked: 0

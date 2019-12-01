@@ -81,3 +81,18 @@ function GetIO(randomizer)
 	return input, output
 end
 
+BeforeLevelDialog = [=[
+[name=依莎緹絲]哈囉！這是測試沙盒。
+This is a test sandbox.[w]
+這是第二頁。
+第三行。[w]
+[name=]現在沒有名字了。[w]
+One
+Two
+Three![w]
+]=]
+
+AfterLevelDialog = [=[
+[name=依莎緹絲]你做的很好！[w]
+]=]
+

@@ -177,12 +177,10 @@ public class Board
 		{
 			board = new Cell[size, size];
 			width = height = size;
-			//Debug.Log($"SetSize {size}");
 		});
 		luaEnvironment.Globals["AddTool"] = (Action<string, int>)((string tool, int count) =>
 		{
 			tools.Add(new ToolItem { Count = count, NewCell = Cell.FromCharacter(tool[0]) });
-			//Debug.Log($"AddTool {tool} {count}");
 		});
 		luaEnvironment.Globals["SetPreset"] = (Action<string>)((string preset) =>
 		{
@@ -199,7 +197,6 @@ public class Board
 				y--;
 				if (y < 0) break;
 			}
-			//Debug.Log($"SetPreset!");
 		});
 
 		luaEnvironment.DoString(levelDescription);
@@ -207,6 +204,24 @@ public class Board
 		luaGetIO = luaEnvironment.Globals.Get("GetIO");
 
 		Tools = tools.ToArray();
+	}
+
+	public string GetBeforeLevelDialogScript()
+	{
+		DynValue value = luaEnvironment.Globals.Get("BeforeLevelDialog");
+		if (value.Type != DataType.String)
+			return "";
+		else
+			return value.String;
+	}
+
+	public string GetAfterLevelDialogScript()
+	{
+		DynValue value = luaEnvironment.Globals.Get("AfterLevelDialog");
+		if (value.Type != DataType.String)
+			return "";
+		else
+			return value.String;
 	}
 
 	/// <summary>
@@ -287,7 +302,7 @@ public class Board
 		}
 	}
 
-	#region Board evolving functions
+#region Board evolving functions
 	public void Start(int seed)
 	{
 		// Bookkeeping
@@ -324,7 +339,7 @@ public class Board
 			}
 		}
 		FindInput(ref inputX, ref inputY);
-		Debug.Log($"Input coordinate: ({inputX}, {inputY})");
+		//Debug.Log($"Input coordinate: ({inputX}, {inputY})");
 
 		// Generate first input Photon
 		GeneratePhoton(input[0], inputX, inputY, 1, 0);
@@ -340,7 +355,7 @@ public class Board
 			velocityX = velx,
 			velocityY = vely
 		});
-		Debug.Log($"Generated Photon id {nextPhotonId}: {Photons[nextPhotonId]}");
+		//Debug.Log($"Generated Photon id {nextPhotonId}: {Photons[nextPhotonId]}");
 	}
 
 	public void Step()
@@ -439,7 +454,7 @@ public class Board
 							Photons.Remove(id);
 							Photons.Remove(there.tarpitId);
 							board[p.positionX - MinX, p.positionY - MinY] = there.SetTarpitId(0);
-							Debug.Log($"Photon id {there.tarpitId} in tarpit removed");
+							//Debug.Log($"Photon id {there.tarpitId} in tarpit removed");
 						}
 						break;
 					case CellType.INPUT:
@@ -458,11 +473,11 @@ public class Board
 			if (Photons.ContainsKey(id))
 			{
 				Photons[id] = p;
-				Debug.Log($"Photon id {id} updated to {p}");
+				//Debug.Log($"Photon id {id} updated to {p}");
 			}
 			else
 			{
-				Debug.Log($"Photon id {id} removed");
+				//Debug.Log($"Photon id {id} removed");
 			}
 		}
 
@@ -495,5 +510,5 @@ public class Board
 		board = boardBackup.Clone() as Cell[,];
 		Photons.Clear();
 	}
-	#endregion
+#endregion
 }

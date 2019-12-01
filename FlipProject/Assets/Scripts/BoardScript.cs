@@ -32,6 +32,8 @@ public class BoardScript : MonoBehaviour,
 	private Transform PhotonScaler;
 	private Dictionary<int, GameObject> GOPhotons;
 
+	public DialogScript TheDialog;
+
 	// Enum index into sprite
 	private enum BoardObjects
 	{
@@ -84,6 +86,23 @@ public class BoardScript : MonoBehaviour,
 	}
 
 	#region Monobehaviour callbacks
+	void Awake()
+	{
+#if UNITY_EDITOR
+		// Check only in editor if all references are all set
+		do
+		{
+			if (TheDialog is null)
+			{
+				Debug.LogError($"TheDialog is not set in {gameObject.name}!");
+				break;
+			}
+			return;
+		} while(false);
+		UnityEditor.EditorApplication.isPlaying = false;
+#endif
+	}
+
 	void Start()
 	{
 		// Finding all Unity GameObjects we need.
@@ -119,6 +138,9 @@ public class BoardScript : MonoBehaviour,
 		// Get the mockup level if no level is set
 		if (levelAsset is null)
 			levelAsset = Resources.Load<TextAsset>("Level/Mockup");
+
+		// TheDialog = GameObject.Find("DialogCanvas").GetComponent<DialogScript>();
+		System.Diagnostics.Debug.Assert(TheDialog is null is false, "");
 
 		LoadLevel();
 	}
@@ -164,6 +186,19 @@ public class BoardScript : MonoBehaviour,
 					GOThisPhoton.GetComponent<SpriteRenderer>().sprite = PhotonToSprite(kv.Value);
 					GOThisPhoton.transform.localPosition = (Vector3)(kv.Value.PositionAtFraction(fractionTime));
 					//Debug.Log($"UI Object Photon {kv.Key} has position {GOThisPhoton.transform.localPosition}");
+				}
+				if (TheBoard.IsComplete())
+				{
+					if (TheBoard.IsOutputMatch())
+					{
+						// Pause simulation to prevent reinvoke
+						IsPausing = true;
+						TheDialog.SetDialog(TheBoard.GetAfterLevelDialogScript());
+						TheDialog.StartDialog(() =>
+						{
+							Debug.Log("Level Complete!");
+						});
+					}
 				}
 			}
 		}
@@ -213,6 +248,13 @@ public class BoardScript : MonoBehaviour,
 		SimulationTime = -1;
 		IsRunning = IsPausing = false;
 		SimulationSpeed = 1;
+
+		string beforeLevelDialog = TheBoard.GetBeforeLevelDialogScript();
+		if (beforeLevelDialog != "")
+		{
+			TheDialog.SetDialog(beforeLevelDialog);
+			TheDialog.StartDialog(() => { Debug.Log("Level start!"); });
+		}
 	}
 
 	/// <summary>
