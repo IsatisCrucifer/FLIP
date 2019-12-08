@@ -26,7 +26,6 @@ public class BoardScript : MonoBehaviour,
 	private Tilemap TMBackground, TMAnimated, TMBoard;
 
 	private Image ImageRunButton, ImageStopButton;
-	private Slider SpeedSlider;
 	private Transform DragIcon;
 	private GameObject GOPhotonTemplate;
 	private Transform PhotonScaler;
@@ -136,7 +135,6 @@ public class BoardScript : MonoBehaviour,
 
 		ImageRunButton = GameObject.Find("RunButton").GetComponent<Image>();
 		ImageStopButton = GameObject.Find("StopButton").GetComponent<Image>();
-		SpeedSlider = GameObject.Find("SpeedSlider").GetComponent<Slider>();
 		GOPhotonTemplate = GameObject.Find("Photon Template");
 		PhotonScaler = GOPhotonTemplate.transform.parent;
 		DragIcon = GameObject.Find("DragIcon").transform;
@@ -457,16 +455,9 @@ public class BoardScript : MonoBehaviour,
 	#endregion
 
 	#region Button Handler
-	public void AdjustSimulationSpeed()
+	public void SetSimulationSpeed(float speed)
 	{
-		float sliderValue = SpeedSlider.value;
-		// Snap to integer if within 0.05
-		if (Mathf.Abs(Mathf.Round(sliderValue) - sliderValue) < 0.1f)
-		{
-			sliderValue = Mathf.Round(sliderValue);
-			SpeedSlider.value = sliderValue;
-		}
-		SimulationSpeed = Mathf.Pow(2f, sliderValue);
+		SimulationSpeed = speed;
 	}
 
 	public void StartSimulation()

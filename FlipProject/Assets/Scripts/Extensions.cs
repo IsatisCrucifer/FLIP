@@ -48,10 +48,11 @@ public static class Extensions
 	}
 	#endregion
 
+	#region Vector234 Extensions
 	// Extend Unity Vector2/3/4 so one can only "change" one component of the vector
 	// 
 	// From https://answers.unity.com/questions/600421/how-to-change-xyz-values-in-a-vector3-properly-in.html
-	#region Vector234 Extensions
+
 	// Vector2
 	public static Vector2 SetX(this Vector2 aVec, float aXValue)
 	{
