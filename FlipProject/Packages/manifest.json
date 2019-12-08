@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.litefeel.bitmapfontimporter": "https://github.com/litefeel/Unity-BitmapFontImporter.git#upm",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.2d.tilemap": "1.0.0",
     "com.unity.collab-proxy": "1.2.16",
@@ -42,5 +43,11 @@
     "com.unity.modules.vr": "1.0.0",
     "com.unity.modules.wind": "1.0.0",
     "com.unity.modules.xr": "1.0.0"
+  },
+  "lock": {
+    "com.litefeel.bitmapfontimporter": {
+      "hash": "ae134552d9e85aa16906a6f133364855c794c9f5",
+      "revision": "upm"
+    }
   }
 }

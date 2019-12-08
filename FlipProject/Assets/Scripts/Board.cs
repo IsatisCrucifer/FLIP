@@ -29,8 +29,8 @@ public class Board
 			/* GENERATOR */ 10,
 			/* SLUICE */    4,
 			/* PROCESS */   1,
-			/* TARPIT */    2,
-			/* INPUT */     1,
+			/* TARPIT */    5,
+			/* INPUT */     4,
 			/* OUTPUT */    1,
 			/* WALL */      1,
 		};
@@ -90,8 +90,11 @@ public class Board
 				case '>': return new Cell(CellType.SLUICE, 3);
 				case 'X': return new Cell(CellType.PROCESS, 0);
 				case '+': return new Cell(CellType.TARPIT, 0);
-				case '*': return new Cell(CellType.TARPIT, 1);
-				case 'i': return new Cell(CellType.INPUT, 0);
+				case '_': return new Cell(CellType.TARPIT, 1);
+				case '*': return new Cell(CellType.TARPIT, 2);
+				case '?': return new Cell(CellType.TARPIT, 3);
+				case '%': return new Cell(CellType.TARPIT, 4);
+				case 'i': return new Cell(CellType.INPUT, 3);
 				case 'o': return new Cell(CellType.OUTPUT, 0);
 				case '#': return new Cell(CellType.WALL, 0);
 				default: throw new ArgumentException($"Unrecognized cell character '{c}'.");
@@ -124,24 +127,13 @@ public class Board
 		}
 	}
 
-	public struct ToolItem
-	{
-		public Cell NewCell;
-		public int Count;
-
-		public override string ToString()
-		{
-			return $"[{NewCell}]x{Count}";
-		}
-	}
-
 	private Cell[,] board;
 	private Cell[,] boardBackup;
 	private int height, width;
 
 	public Dictionary<int, Photon> Photons { get; private set; }
 
-	public ToolItem[] Tools { get; private set; }
+	public List<Cell> Tools { get; private set; }
 
 	public int MinX => -height / 2;
 	public int MaxX => height - 1 + MinX;
@@ -152,10 +144,11 @@ public class Board
 	private Script luaEnvironment;
 	private DynValue luaGetIO;
 	private List<int> input, output, golden;
-	private int inputX, inputY;
+	private int inputX, inputY, inputVelocityX, inputVelocityY;
 	private int nextPhotonId;
 	public int CurrentTime { get; private set; }
 	public int InputSpeed;
+	public int InputIndex => CurrentTime / InputSpeed;
 
 	public Board(string levelDescription)
 	{
@@ -171,16 +164,17 @@ public class Board
 	private void ParseFromLua(string levelDescription)
 	{
 		luaEnvironment = new Script();
-		List<ToolItem> tools = new List<ToolItem>();
+		//List<ToolItem> tools = new List<ToolItem>();
+		Tools = new List<Cell>();
 
 		luaEnvironment.Globals["SetSize"] = (Action<int>)((int size) =>
 		{
 			board = new Cell[size, size];
 			width = height = size;
 		});
-		luaEnvironment.Globals["AddTool"] = (Action<string, int>)((string tool, int count) =>
+		luaEnvironment.Globals["AddTool"] = (Action<string>)((string tool) =>
 		{
-			tools.Add(new ToolItem { Count = count, NewCell = Cell.FromCharacter(tool[0]) });
+			Tools.Add(Cell.FromCharacter(tool[0]));
 		});
 		luaEnvironment.Globals["SetPreset"] = (Action<string>)((string preset) =>
 		{
@@ -202,8 +196,6 @@ public class Board
 		luaEnvironment.DoString(levelDescription);
 
 		luaGetIO = luaEnvironment.Globals.Get("GetIO");
-
-		Tools = tools.ToArray();
 	}
 
 	public string GetBeforeLevelDialogScript()
@@ -231,10 +223,9 @@ public class Board
 	/// <returns>The new item.</returns>
 	public Cell TakeTool(int toolIndex)
 	{
-		if (toolIndex >= 0 && toolIndex < Tools.Length && Tools[toolIndex].Count != 0)
+		if (toolIndex >= 0 && toolIndex < Tools.Count)
 		{
-			Tools[toolIndex].Count--;
-			return Tools[toolIndex].NewCell;
+			return Tools[toolIndex];
 		}
 		else
 		{
@@ -249,15 +240,7 @@ public class Board
 	/// <returns>Whether the item is successfully returned.</returns>
 	public bool ReturnTool(Board.Cell cell)
 	{
-		for (int i = 0; i < Tools.Length; i++)
-		{
-			if (Tools[i].NewCell.type == cell.type)
-			{
-				Tools[i].Count++;
-				return true;
-			}
-		}
-		return false;
+		return cell.type != CellType.INPUT && cell.type != CellType.OUTPUT && cell.type != CellType.WALL;
 	}
 
 	public bool IsInBound(int x, int y)
@@ -331,8 +314,29 @@ public class Board
 				{
 					if (board[x - MinX, y - MinY].type == CellType.INPUT)
 					{
+						int param = board[x - MinX, y - MinY].param;
 						inputX = x;
 						inputY = y;
+						switch(param)
+						{
+							case 0: // UP
+								inputVelocityX = 0;
+								inputVelocityY = 1;
+								break;
+							case 1: // LEFT
+								inputVelocityX = -1;
+								inputVelocityY = 0;
+								break;
+							case 2:
+								inputVelocityX = 0;
+								inputVelocityY = -1;
+								break;
+							case 3:
+							default:
+								inputVelocityX = 1;
+								inputVelocityY = 0;
+								break;
+						}
 						return;
 					}
 				}
@@ -342,7 +346,7 @@ public class Board
 		//Debug.Log($"Input coordinate: ({inputX}, {inputY})");
 
 		// Generate first input Photon
-		GeneratePhoton(input[0], inputX, inputY, 1, 0);
+		GeneratePhoton(input[0], inputX, inputY, inputVelocityX, inputVelocityY);
 	}
 
 	private void GeneratePhoton(int value, int posx, int posy, int velx, int vely)
@@ -484,10 +488,10 @@ public class Board
 		// Generate photon from input
 		if (CurrentTime % InputSpeed == 0)
 		{
-			int id = CurrentTime / InputSpeed;
+			int id = InputIndex;
 			if (id < input.Count)
 			{
-				GeneratePhoton(input[id], inputX, inputY, 1, 0);
+				GeneratePhoton(input[id], inputX, inputY, inputVelocityX, inputVelocityY);
 			}
 		}
 	}
@@ -504,10 +508,26 @@ public class Board
 		return golden.SequenceEqual(output);
 	}
 
+	// Preview to be displayed on screen
+	public List<int> InputPreview()
+	{
+		if (CurrentTime < 0) return new List<int>();
+		return input.Slice(InputIndex + 1).ToList();
+	}
+
+	// Recent output to be displayed on screen
+	public List<Tuple<int, bool>> RecentOutput()
+	{
+		if (CurrentTime < 0) return new List<Tuple<int, bool>>();
+		return output.Zip(golden,
+			(outElem, goldenElem) => Tuple.Create<int, bool>(outElem, outElem == goldenElem)).ToList();
+	}
+
 	public void Stop()
 	{
 		CurrentTime = -1;
-		board = boardBackup.Clone() as Cell[,];
+		board = boardBackup;
+		boardBackup = null;
 		Photons.Clear();
 	}
 #endregion

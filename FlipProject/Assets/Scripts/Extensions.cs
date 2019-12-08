@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public static class Extensions
@@ -24,6 +25,26 @@ public static class Extensions
 	public static int ModM(this int value, int modulus)
 	{
 		return (value % modulus + modulus) % modulus;
+	}
+	#endregion
+
+	#region IEnumerable Extensions
+	// cf. https://stackoverflow.com/questions/20678653/
+	public static IEnumerable<T> Slice<T>(this IEnumerable<T> source, int from = 0, int to = -1)
+	{
+		int srcCount = source.Count();
+		if (from < 0) from += srcCount;
+		from = Math.Min(from, srcCount);
+		if (to == -1)
+		{
+			return source.Skip(from);
+		}
+		else
+		{
+			if (to < 0) to += srcCount;
+			to = Math.Min(to, srcCount);
+			return source.Take(to).Skip(from);
+		}
 	}
 	#endregion
 

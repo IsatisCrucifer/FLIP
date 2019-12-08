@@ -26,18 +26,21 @@ Object shorthands: (Mostly follow original FLIP)
  GENERATOR: 0 1 2 3 4 5 6 7 8 9
  SLUICE: ^ < v >
  PROCESS: X
- TARPIT: + *
- INPUT: i
- OUTPUT: o
+ UNARY: p m d h n
+ TARPIT: + _ * ? %
+ MODIFIER: T F E N G L g l O E
  WALL: #
+ (The following can only be used on preset)
+ INPUT: i  (Always face right)
+ OUTPUT: o
 ]]
 
 SetSize(12)
-AddTool("-", 99)
-AddTool("0", 99)
-AddTool("^", 99)
-AddTool("X", 99)
-AddTool("+", 99)
+AddTool("-")
+AddTool("0")
+AddTool("^")
+AddTool("X")
+AddTool("+")
 --[==[
 SetPreset([[
 ............

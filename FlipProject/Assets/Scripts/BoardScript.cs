@@ -18,12 +18,12 @@ public class BoardScript : MonoBehaviour,
 	{
 		public GameObject GOTool;
 		public Image ImageIcon;
-		public Text TextAmount;
+		//public Text TextAmount;
 	}
 	private List<ToolGameObjects> LGOTools;
 
 	private Camera MainCamera;
-	private Tilemap TMBoard;
+	private Tilemap TMBackground, TMAnimated, TMBoard;
 
 	private Image ImageRunButton, ImageStopButton;
 	private Slider SpeedSlider;
@@ -39,24 +39,29 @@ public class BoardScript : MonoBehaviour,
 	{
 		// Generators
 		GEN_0, GEN_1, GEN_2, GEN_3, GEN_4, GEN_5, GEN_6, GEN_7, GEN_8, GEN_9,
-		// Mirrors
-		MIRROR_HORIZONTAL, MIRROR_FORWARD, MIRROR_VERTICAL, MIRROR_BACKWARD,
+		// Misc
+		WALL, BACKGROUND,
+		// Hit Generators
+		GEN_HIT_0, GEN_HIT_1, GEN_HIT_2, GEN_HIT_3, GEN_HIT_4, GEN_HIT_5, GEN_HIT_6, GEN_HIT_7, GEN_HIT_8, GEN_HIT_9,
 		// Sluices
 		SLUICE_UP, SLUICE_LEFT, SLUICE_DOWN, SLUICE_RIGHT,
-		// Grille
-		GRILLE,
-		// Processor
-		PROCESS_INCREMENT, PROCESS_DECREMENT, PROCESS_RESET, PROCESS_NEGATE, PROCESS_SPLIT,
+		SLUICE_UP_L, SLUICE_LEFT_L, SLUICE_DOWN_L, SLUICE_RIGHT_L,
+		SLUICE_UP_R, SLUICE_LEFT_R, SLUICE_DOWN_R, SLUICE_RIGHT_R,
+		// Mirrors
+		MIRROR_HORIZONTAL, MIRROR_FORWARD, MIRROR_VERTICAL, MIRROR_BACKWARD,
+		// Inputs
+		INPUT_UP, INPUT_LEFT, INPUT_DOWN, INPUT_RIGHT,
 		// Tarpit
-		TARPIT_PLUS, TARPIT_MULTIPLY,
-		// Misc
-		STOP, OUTPUT, INPUT, WALL,
-		// Modifier (TODO: remove?)
-		MODIFIER_TRUE, MODIFIER_POSITIVE, MODIFIER_NEGATIVE, MODIFIER_ZERO, MODIFIER_ODD, MODIFIER_RANDOM,
-		// Level (TODO: Really remove)
-		LEVEL_UP, LEVEL_DOWN,
-		// Misc
-		BACKGROUND, UNKNOWN,
+		TARPIT_PLUS, TARPIT_MINUS, TARPIT_MULTIPLY, TARPIT_DIVIDE, TARPIT_MOD,
+		// Processor
+		PROCESS_INCREMENT, PROCESS_DECREMENT, PROCESS_DOUBLE, PROCESS_HALF, PROCESS_NEGATE, PROCESS_SPLIT,
+		// Modifier
+		MODIFIER_TRUE, MODIFIER_FALSE,
+		MODIFIER_ZERO, MODIFIER_NONZERO, MODIFIER_POSITIVE, MODIFIER_NEGATIVE,
+		MODIFIER_NONNEGATIVE, MODIFIER_NONPOSITIVE, MODIFIER_ODD, MODIFIER_EVEN,
+		// Animates
+		OUTPUT1, OUTPUT2, OUTPUT3, OUTPUT4, OUTPUT5, OUTPUT6,
+		MODIFIER1, MODIFIER2, MODIFIER3, MODIFIER4,
 	}
 	// The Sprite
 	Sprite[] SpriteTools;
@@ -71,6 +76,7 @@ public class BoardScript : MonoBehaviour,
 	private Board.Cell DraggingCell;
 	private bool IsRunning;
 	private bool IsPausing;
+	private float SimulationStartWallTime;
 	private float SimulationTime;
 	private float SimulationSpeed;
 
@@ -114,16 +120,18 @@ public class BoardScript : MonoBehaviour,
 			{
 				GOTool = t.gameObject,
 				ImageIcon = t.Find("Icon").GetComponent<Image>(),
-				TextAmount = t.Find("Amount").GetComponent<Text>(),
+				//TextAmount = t.Find("Amount").GetComponent<Text>(),
 			});
 		}
 
-		SpriteTools = Resources.LoadAll<Sprite>("Sprites/Legacy Tile");
+		SpriteTools = Resources.LoadAll<Sprite>("Sprites/NewTile");
 		SpritePhotons = Resources.LoadAll<Sprite>("Sprites/Photon");
 		SpriteButtons = Resources.LoadAll<Sprite>("Sprites/RunImage");
 
 		MainCamera = GameObject.Find("Main Camera").GetComponent<Camera>();
 
+		TMBackground = GameObject.Find("Grid/BoardBackground").GetComponent<Tilemap>();
+		TMAnimated = GameObject.Find("Grid/AnimatedTilemap").GetComponent<Tilemap>();
 		TMBoard = GameObject.Find("Grid/BoardTilemap").GetComponent<Tilemap>();
 
 		ImageRunButton = GameObject.Find("RunButton").GetComponent<Image>();
@@ -201,16 +209,23 @@ public class BoardScript : MonoBehaviour,
 					}
 				}
 			}
-		}
-		else // Not Running, update tool
-		{
-			for (int i = 0; i < TheBoard.Tools.Length; i++)
+			// Render animated tile
+			float timediff = Time.time - SimulationStartWallTime;
+			for (int x = TheBoard.MinX; x <= TheBoard.MaxX; x++)
 			{
-				if (TheBoard.Tools[i].Count < 0)
-					LGOTools[i].TextAmount.text = "INF";
-				else
-					LGOTools[i].TextAmount.text = TheBoard.Tools[i].Count.ToString();
+				for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
+				{
+					if (TheBoard[x, y].type == Board.CellType.OUTPUT)
+					{
+						int rotate = (int)Mathf.Floor(timediff / 0.25f) % 6;
+						TMAnimated.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.OUTPUT1 + rotate]));
+					}
+				}
 			}
+		}
+		else // Not Running
+		{
+			// Currently nothing to do
 		}
 	}
 	#endregion
@@ -224,14 +239,13 @@ public class BoardScript : MonoBehaviour,
 
 		for (int i = 0; i < LGOTools.Count; i++)
 		{
-			if (i >= TheBoard.Tools.Length)
+			if (i >= TheBoard.Tools.Count)
 			{
 				LGOTools[i].GOTool.SetActive(false);
 			}
 			else
 			{
-				LGOTools[i].ImageIcon.sprite = CellToSprite(TheBoard.Tools[i].NewCell);
-				LGOTools[i].TextAmount.text = "INF";
+				LGOTools[i].ImageIcon.sprite = CellToSprite(TheBoard.Tools[i]);
 			}
 		}
 
@@ -241,6 +255,7 @@ public class BoardScript : MonoBehaviour,
 		{
 			for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
 			{
+				TMBackground.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.BACKGROUND]));
 				TMBoard.SetTile(new Vector3Int(x, y, 0), CellToTile(TheBoard[x, y]));
 			}
 		}
@@ -453,7 +468,7 @@ public class BoardScript : MonoBehaviour,
 	{
 		float sliderValue = SpeedSlider.value;
 		// Snap to integer if within 0.05
-		if (Mathf.Abs(Mathf.Round(sliderValue) - sliderValue) < 0.05f)
+		if (Mathf.Abs(Mathf.Round(sliderValue) - sliderValue) < 0.1f)
 		{
 			sliderValue = Mathf.Round(sliderValue);
 			SpeedSlider.value = sliderValue;
@@ -465,7 +480,11 @@ public class BoardScript : MonoBehaviour,
 	{
 		if (!IsRunning || IsPausing)
 		{
-			if(!IsRunning) SimulationTime = 0;
+			if (!IsRunning)
+			{
+				SimulationTime = 0;
+				SimulationStartWallTime = Time.time;
+			}
 			IsRunning = true;
 			IsPausing = false;
 			ImageRunButton.sprite = SpriteButtons[1];
@@ -491,6 +510,13 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
+		for (int x = TheBoard.MinX; x <= TheBoard.MaxX; x++)
+		{
+			for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
+			{
+				TMAnimated.SetTile(new Vector3Int(x, y, 0), null);
+			}
+		}
 	}
 	#endregion
 
@@ -515,9 +541,9 @@ public class BoardScript : MonoBehaviour,
 			case Board.CellType.TARPIT:
 				return (int)BoardObjects.TARPIT_PLUS + cell.param;
 			case Board.CellType.INPUT:
-				return (int)BoardObjects.INPUT;
+				return (int)BoardObjects.INPUT_RIGHT;
 			case Board.CellType.OUTPUT:
-				return (int)BoardObjects.OUTPUT;
+				return (int)BoardObjects.OUTPUT1;
 			case Board.CellType.WALL:
 				return (int)BoardObjects.WALL;
 			default:
@@ -546,8 +572,13 @@ public class BoardScript : MonoBehaviour,
 	{
 		int index = CellToSpriteIndex(cell);
 		if (index == -1) return null;
+		return SpriteToTile(SpriteTools[index]);
+	}
+
+	private Tile SpriteToTile(Sprite sprite)
+	{
 		Tile theTile = ScriptableObject.CreateInstance<Tile>();
-		theTile.sprite = SpriteTools[index];
+		theTile.sprite = sprite;
 		return theTile;
 	}
 	#endregion
