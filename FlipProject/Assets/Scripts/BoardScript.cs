@@ -205,23 +205,19 @@ public class BoardScript : MonoBehaviour,
 						TheDialog.StartDialog(() =>
 						{
 							Debug.Log("Level Complete!");
+							StopSimulation();
 						});
 					}
 				}
 			}
 			// Render animated tile
 			float timediff = Time.time - SimulationStartWallTime;
-			for (int x = TheBoard.MinX; x <= TheBoard.MaxX; x++)
-			{
-				for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
+			TheBoard.FindCell((x, y, cell) => cell.type == Board.CellType.OUTPUT,
+				(x, y, cell) =>
 				{
-					if (TheBoard[x, y].type == Board.CellType.OUTPUT)
-					{
-						int rotate = (int)Mathf.Floor(timediff / 0.25f) % 6;
-						TMAnimated.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.OUTPUT1 + rotate]));
-					}
-				}
-			}
+					int rotate = (int)Mathf.Floor(timediff / 0.25f) % 6;
+					TMAnimated.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.OUTPUT1 + rotate]));
+				});
 		}
 		else // Not Running
 		{
@@ -251,14 +247,11 @@ public class BoardScript : MonoBehaviour,
 
 		IsDragging = false;
 
-		for (int x = TheBoard.MinX; x <= TheBoard.MaxX; x++)
+		TheBoard.ForEachCell((x, y, cell)=>
 		{
-			for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
-			{
-				TMBackground.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.BACKGROUND]));
-				TMBoard.SetTile(new Vector3Int(x, y, 0), CellToTile(TheBoard[x, y]));
-			}
-		}
+			TMBackground.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.BACKGROUND]));
+			TMBoard.SetTile(new Vector3Int(x, y, 0), CellToTile(cell));
+		});
 
 		SimulationTime = -1;
 		IsRunning = IsPausing = false;
@@ -510,13 +503,10 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
-		for (int x = TheBoard.MinX; x <= TheBoard.MaxX; x++)
+		TheBoard.ForEachCell((x, y, cell) =>
 		{
-			for (int y = TheBoard.MinY; y <= TheBoard.MaxY; y++)
-			{
-				TMAnimated.SetTile(new Vector3Int(x, y, 0), null);
-			}
-		}
+			TMAnimated.SetTile(new Vector3Int(x, y, 0), null);
+		});
 	}
 	#endregion
 
@@ -541,7 +531,7 @@ public class BoardScript : MonoBehaviour,
 			case Board.CellType.TARPIT:
 				return (int)BoardObjects.TARPIT_PLUS + cell.param;
 			case Board.CellType.INPUT:
-				return (int)BoardObjects.INPUT_RIGHT;
+				return (int)BoardObjects.INPUT_UP + cell.param;
 			case Board.CellType.OUTPUT:
 				return (int)BoardObjects.OUTPUT1;
 			case Board.CellType.WALL:

@@ -104,26 +104,49 @@ public class Board
 
 	public static Cell EmptyCell => new Cell(CellType.EMPTY, 0);
 
+	private static Vector2Int DirectionIdToVector(int dir)
+	{
+		switch (dir)
+		{
+			case 0: return Vector2Int.up;
+			case 1: return Vector2Int.left;
+			case 2: return Vector2Int.down;
+			case 3: return Vector2Int.right;
+			case 4: default: return Vector2Int.zero;
+		}
+	}
+
+	private static Vector2Int DirRotateCCW90(Vector2Int dir) => new Vector2Int(-dir.y, dir.x);
+	private static Vector2Int DirReflect(Vector2Int dir) => new Vector2Int(-dir.x, -dir.y);
+	private static Vector2Int DirRotateCW90(Vector2Int dir) => new Vector2Int(dir.y, -dir.x);
+
 	public struct Photon
 	{
 		public int value;
-		public int positionX, positionY;
-		public int velocityX, velocityY;
+		public Vector2Int position;
+		public Vector2Int direction;
 
 		public override string ToString()
 		{
-			return $"Photon value {value} at ({positionX}, {positionY}) with velocity ({velocityX}, {velocityY})";
+			return $"Photon value {value} at {position} with direction {direction}";
 		}
 
-		public void SetVelocity(int vx, int vy)
+		public void SetDirection(Vector2Int dir)
 		{
-			velocityX = vx;
-			velocityY = vy;
+			direction = dir;
 		}
+
+		public void Advance() => position += direction;
+
+		public void TurnLeft() => direction = DirRotateCCW90(direction);
+
+		public void Reflect() => direction = DirReflect(direction);
+
+		public void TurnRight() => direction = DirRotateCW90(direction);
 
 		public Vector2 PositionAtFraction(float fraction)
 		{
-			return new Vector2(positionX + fraction * velocityX, positionY + fraction * velocityY);
+			return position + fraction * (Vector2)direction;
 		}
 	}
 
@@ -135,16 +158,17 @@ public class Board
 
 	public List<Cell> Tools { get; private set; }
 
-	public int MinX => -height / 2;
-	public int MaxX => height - 1 + MinX;
-	public int MinY => -width / 2;
-	public int MaxY => width - 1 + MinY;
+	private int MinX => -height / 2;
+	private int MaxX => height - 1 + MinX;
+	private int MinY => -width / 2;
+	private int MaxY => width - 1 + MinY;
 
 	// Board evaluation members
 	private Script luaEnvironment;
 	private DynValue luaGetIO;
 	private List<int> input, output, golden;
-	private int inputX, inputY, inputVelocityX, inputVelocityY;
+	private Vector2Int inputPosition;
+	private Vector2Int inputDirection;
 	private int nextPhotonId;
 	public int CurrentTime { get; private set; }
 	public int InputSpeed;
@@ -285,7 +309,28 @@ public class Board
 		}
 	}
 
-#region Board evolving functions
+	#region Board search/traverse functions
+	public void ForEachCell(Action<int, int, Cell> action)
+	{
+		for(int x = MinX; x <= MaxX; x++)
+		{
+			for(int y = MinY; y <= MaxY; y++)
+			{
+				action(x, y, board[x - MinX, y - MinY]);
+			}
+		}
+	}
+
+	public void FindCell(Func<int, int, Cell, bool> condition, Action<int, int, Cell> action)
+	{
+		ForEachCell((int x, int y, Cell cell) => {
+			if (condition(x, y, cell))
+				action(x, y, cell);
+		});
+	}
+	#endregion
+
+	#region Board evolving functions
 	public void Start(int seed)
 	{
 		// Bookkeeping
@@ -306,58 +351,25 @@ public class Board
 		boardBackup = board.Clone() as Cell[,];
 
 		// Find out where input is
-		void FindInput(ref int inputX, ref int inputY)
-		{
-			for (int x = MinX; x <= MaxX; x++)
+		FindCell((x, y, cell) => cell.type == CellType.INPUT,
+			(x, y, cell) =>
 			{
-				for (int y = MinY; y <= MaxY; y++)
-				{
-					if (board[x - MinX, y - MinY].type == CellType.INPUT)
-					{
-						int param = board[x - MinX, y - MinY].param;
-						inputX = x;
-						inputY = y;
-						switch(param)
-						{
-							case 0: // UP
-								inputVelocityX = 0;
-								inputVelocityY = 1;
-								break;
-							case 1: // LEFT
-								inputVelocityX = -1;
-								inputVelocityY = 0;
-								break;
-							case 2:
-								inputVelocityX = 0;
-								inputVelocityY = -1;
-								break;
-							case 3:
-							default:
-								inputVelocityX = 1;
-								inputVelocityY = 0;
-								break;
-						}
-						return;
-					}
-				}
-			}
-		}
-		FindInput(ref inputX, ref inputY);
+				inputPosition = new Vector2Int(x, y);
+				inputDirection = DirectionIdToVector(cell.param);
+			});
 		//Debug.Log($"Input coordinate: ({inputX}, {inputY})");
 
 		// Generate first input Photon
-		GeneratePhoton(input[0], inputX, inputY, inputVelocityX, inputVelocityY);
+		GeneratePhoton(input[0], inputPosition, inputDirection);
 	}
 
-	private void GeneratePhoton(int value, int posx, int posy, int velx, int vely)
+	private void GeneratePhoton(int value, Vector2Int position, Vector2Int dir)
 	{
 		Photons.Add(++nextPhotonId, new Photon
 		{
 			value = value,
-			positionX = posx,
-			positionY = posy,
-			velocityX = velx,
-			velocityY = vely
+			position = position,
+			direction = dir
 		});
 		//Debug.Log($"Generated Photon id {nextPhotonId}: {Photons[nextPhotonId]}");
 	}
@@ -374,17 +386,16 @@ public class Board
 			Photon p = Photons[id];
 
 			// update position
-			p.positionX += p.velocityX;
-			p.positionY += p.velocityY;
+			p.Advance();
 
-			if (!IsInBound(p.positionX, p.positionY))
+			if (!IsInBound(p.position))
 			{
 				Photons.Remove(id);
 			}
 			else
 			{
 				// Find out what is there
-				Cell there = board[p.positionX - MinX, p.positionY - MinY];
+				Cell there = this[p.position];
 				switch (there.type)
 				{
 					case CellType.EMPTY:
@@ -393,71 +404,72 @@ public class Board
 						switch (there.param)
 						{
 							case 0: // - 
-								if (p.velocityY == 0)
+								if (p.direction.y == 0)
 									Photons.Remove(id);
 								else
-									p.velocityY = -p.velocityY;
+									p.Reflect();
 								break;
 							case 1: // / 
-								p.SetVelocity(p.velocityY, p.velocityX);
+								if (p.direction.y == 0)
+									p.TurnLeft();
+								else
+									p.TurnRight();
 								break;
 							case 2: // | 
-								if (p.velocityX == 0)
+								if (p.direction.x == 0)
 									Photons.Remove(id);
 								else
-									p.velocityX = -p.velocityX;
+									p.Reflect();
 								break;
 							case 3: // \ 
-								p.SetVelocity(-p.velocityY, -p.velocityX);
+								if (p.direction.x == 0)
+									p.TurnLeft();
+								else
+									p.TurnRight();
 								break;
 						}
 						break;
 					case CellType.GENERATOR:
-						GeneratePhoton(there.param, p.positionX, p.positionY, p.velocityX, p.velocityY);
-						p.SetVelocity(-p.velocityX, -p.velocityY);
+						GeneratePhoton(there.param, p.position, p.direction);
+						p.Reflect();
 						break;
 					case CellType.SLUICE:
-						switch (there.param)
-						{
-							case 0: // ^
-								p.SetVelocity(0, 1);
-								break;
-							case 1: // <
-								p.SetVelocity(-1, 0);
-								break;
-							case 2: // v
-								p.SetVelocity(0, -1);
-								break;
-							case 3: // >
-								p.SetVelocity(1, 0);
-								break;
-						}
+						p.SetDirection(DirectionIdToVector(there.param));
 						break;
 					case CellType.PROCESS:
-						GeneratePhoton(p.value, p.positionX, p.positionY, p.velocityY, p.velocityX);
-						GeneratePhoton(p.value, p.positionX, p.positionY, -p.velocityY, -p.velocityX);
+						GeneratePhoton(p.value, p.position, DirRotateCCW90(p.direction));
+						GeneratePhoton(p.value, p.position, DirRotateCW90(p.direction));
 						Photons.Remove(id);
 						break;
 					case CellType.TARPIT:
 						// I am stuck in the pit
-						if (p.velocityX == 0 && p.velocityY == 0)
+						if (p.direction == Vector2Int.zero)
 							break;
 						// I come to the pit
 						if (there.tarpitId == 0)
 						{
 							// No others are in the pit
-							p.SetVelocity(0, 0); // I'm stuck
-							board[p.positionX - MinX, p.positionY - MinY] = there.SetTarpitId(id);
+							p.SetDirection(Vector2Int.zero); // I'm stuck
+							this[p.position] = there.SetTarpitId(id);
 						}
 						else
 						{
 							// Someone is in the pit
 							int thereValue = Photons[there.tarpitId].value;
-							int newValue = there.param == 0 ? thereValue + p.value : thereValue * p.value;
-							GeneratePhoton(newValue, p.positionX, p.positionY, p.velocityX, p.velocityY);
+							int newValue;
+							switch (there.param)
+							{
+								case 0: newValue = thereValue + p.value; break;
+								case 1: newValue = thereValue - p.value; break;
+								case 2: newValue = thereValue * p.value; break;
+								case 3: newValue = p.value == 0 ? 0 : thereValue / p.value; break;
+								case 4: newValue = p.value == 0 ? 0 : thereValue % p.value; break;
+								default: newValue = 0; break;
+							}
+							GeneratePhoton(newValue, p.position, p.direction);
 							Photons.Remove(id);
 							Photons.Remove(there.tarpitId);
-							board[p.positionX - MinX, p.positionY - MinY] = there.SetTarpitId(0);
+							this[p.position] = there.SetTarpitId(0);
 							//Debug.Log($"Photon id {there.tarpitId} in tarpit removed");
 						}
 						break;
@@ -491,7 +503,7 @@ public class Board
 			int id = InputIndex;
 			if (id < input.Count)
 			{
-				GeneratePhoton(input[id], inputX, inputY, inputVelocityX, inputVelocityY);
+				GeneratePhoton(input[id], inputPosition, inputDirection);
 			}
 		}
 	}
