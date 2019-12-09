@@ -18,12 +18,11 @@ public class BoardScript : MonoBehaviour,
 	{
 		public GameObject GOTool;
 		public Image ImageIcon;
-		//public Text TextAmount;
 	}
 	private List<ToolGameObjects> LGOTools;
 
 	private Camera MainCamera;
-	private Tilemap TMBackground, TMAnimated, TMBoard;
+	private Tilemap TMBoard;
 
 	private Image ImageRunButton, ImageStopButton;
 	private Transform DragIcon;
@@ -33,37 +32,7 @@ public class BoardScript : MonoBehaviour,
 
 	public DialogScript TheDialog;
 
-	// Enum index into sprite
-	private enum BoardObjects
-	{
-		// Generators
-		GEN_0, GEN_1, GEN_2, GEN_3, GEN_4, GEN_5, GEN_6, GEN_7, GEN_8, GEN_9,
-		// Misc
-		WALL, BACKGROUND,
-		// Hit Generators
-		GEN_HIT_0, GEN_HIT_1, GEN_HIT_2, GEN_HIT_3, GEN_HIT_4, GEN_HIT_5, GEN_HIT_6, GEN_HIT_7, GEN_HIT_8, GEN_HIT_9,
-		// Sluices
-		SLUICE_UP, SLUICE_LEFT, SLUICE_DOWN, SLUICE_RIGHT,
-		SLUICE_UP_L, SLUICE_LEFT_L, SLUICE_DOWN_L, SLUICE_RIGHT_L,
-		SLUICE_UP_R, SLUICE_LEFT_R, SLUICE_DOWN_R, SLUICE_RIGHT_R,
-		// Mirrors
-		MIRROR_HORIZONTAL, MIRROR_FORWARD, MIRROR_VERTICAL, MIRROR_BACKWARD,
-		// Inputs
-		INPUT_UP, INPUT_LEFT, INPUT_DOWN, INPUT_RIGHT,
-		// Tarpit
-		TARPIT_PLUS, TARPIT_MINUS, TARPIT_MULTIPLY, TARPIT_DIVIDE, TARPIT_MOD,
-		// Processor
-		PROCESS_INCREMENT, PROCESS_DECREMENT, PROCESS_DOUBLE, PROCESS_HALF, PROCESS_NEGATE, PROCESS_SPLIT,
-		// Modifier
-		MODIFIER_TRUE, MODIFIER_FALSE,
-		MODIFIER_ZERO, MODIFIER_NONZERO, MODIFIER_POSITIVE, MODIFIER_NEGATIVE,
-		MODIFIER_NONNEGATIVE, MODIFIER_NONPOSITIVE, MODIFIER_ODD, MODIFIER_EVEN,
-		// Animates
-		OUTPUT1, OUTPUT2, OUTPUT3, OUTPUT4, OUTPUT5, OUTPUT6,
-		MODIFIER1, MODIFIER2, MODIFIER3, MODIFIER4,
-	}
 	// The Sprite
-	Sprite[] SpriteTools;
 	Sprite[] SpritePhotons;
 	Sprite[] SpriteButtons;
 
@@ -75,7 +44,6 @@ public class BoardScript : MonoBehaviour,
 	private Board.Cell DraggingCell;
 	private bool IsRunning;
 	private bool IsPausing;
-	private float SimulationStartWallTime;
 	private float SimulationTime;
 	private float SimulationSpeed;
 
@@ -87,7 +55,7 @@ public class BoardScript : MonoBehaviour,
 	private void SetBoardAndTile(Vector2Int pos, Board.Cell cell)
 	{
 		TheBoard[pos] = cell;
-		TMBoard.SetTile((Vector3Int)pos, CellToTile(cell));
+		TMBoard.RefreshTile((Vector3Int)pos);
 	}
 
 	#region Monobehaviour callbacks
@@ -123,14 +91,11 @@ public class BoardScript : MonoBehaviour,
 			});
 		}
 
-		SpriteTools = Resources.LoadAll<Sprite>("Sprites/NewTile");
 		SpritePhotons = Resources.LoadAll<Sprite>("Sprites/Photon");
 		SpriteButtons = Resources.LoadAll<Sprite>("Sprites/RunImage");
 
 		MainCamera = GameObject.Find("Main Camera").GetComponent<Camera>();
 
-		TMBackground = GameObject.Find("Grid/BoardBackground").GetComponent<Tilemap>();
-		TMAnimated = GameObject.Find("Grid/AnimatedTilemap").GetComponent<Tilemap>();
 		TMBoard = GameObject.Find("Grid/BoardTilemap").GetComponent<Tilemap>();
 
 		ImageRunButton = GameObject.Find("RunButton").GetComponent<Image>();
@@ -208,14 +173,6 @@ public class BoardScript : MonoBehaviour,
 					}
 				}
 			}
-			// Render animated tile
-			float timediff = Time.time - SimulationStartWallTime;
-			TheBoard.FindCell((x, y, cell) => cell.type == Board.CellType.OUTPUT,
-				(x, y, cell) =>
-				{
-					int rotate = (int)Mathf.Floor(timediff / 0.25f) % 6;
-					TMAnimated.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.OUTPUT1 + rotate]));
-				});
 		}
 		else // Not Running
 		{
@@ -230,6 +187,7 @@ public class BoardScript : MonoBehaviour,
 	private void LoadLevel()
 	{
 		TheBoard = new Board(levelAsset.text);
+		BoardTile.Initialize(TheBoard);
 
 		for (int i = 0; i < LGOTools.Count; i++)
 		{
@@ -239,7 +197,7 @@ public class BoardScript : MonoBehaviour,
 			}
 			else
 			{
-				LGOTools[i].ImageIcon.sprite = CellToSprite(TheBoard.Tools[i]);
+				LGOTools[i].ImageIcon.sprite = BoardTile.CellToSprite(TheBoard.Tools[i]);
 			}
 		}
 
@@ -247,8 +205,8 @@ public class BoardScript : MonoBehaviour,
 
 		TheBoard.ForEachCell((x, y, cell)=>
 		{
-			TMBackground.SetTile(new Vector3Int(x, y, 0), SpriteToTile(SpriteTools[(int)BoardObjects.BACKGROUND]));
-			TMBoard.SetTile(new Vector3Int(x, y, 0), CellToTile(cell));
+			BoardTile tile = ScriptableObject.CreateInstance<BoardTile>();
+			TMBoard.SetTile(new Vector3Int(x, y, 0), tile);
 		});
 
 		SimulationTime = -1;
@@ -353,6 +311,7 @@ public class BoardScript : MonoBehaviour,
 				if (!NewCell.IsEmpty())
 				{
 					DraggingCell = NewCell;
+					DraggingFrom = new Vector2Int(-999, -999);
 					break;
 				}
 			}
@@ -360,7 +319,7 @@ public class BoardScript : MonoBehaviour,
 			{
 				// Begin drag on a board
 				Board.Cell cell = TheBoard[pos];
-				if (!cell.IsEmpty() && cell.type != Board.CellType.WALL)
+				if (cell.IsMovable())
 				{
 					DraggingCell = cell;
 					DraggingFrom = pos;
@@ -372,7 +331,7 @@ public class BoardScript : MonoBehaviour,
 			return;
 		} while (false);
 		IsDragging = true;
-		Sprite draggingSprite = CellToSprite(DraggingCell);
+		Sprite draggingSprite = BoardTile.CellToSprite(DraggingCell);
 		DragIcon.gameObject.SetActive(true);
 		DragIcon.GetComponent<SpriteRenderer>().sprite = draggingSprite;
 		DragIcon.position = MainCamera.ScreenToWorldPoint((Vector3)eventData.position).SetZ(0);
@@ -401,16 +360,25 @@ public class BoardScript : MonoBehaviour,
 				// Set item at target position
 				SetBoardAndTile(pos, DraggingCell);
 			}
-			else if (targetCell.type == Board.CellType.WALL)
+			else if (DraggingFrom.x != -999)
 			{
-				// Cannot swap with wall, spring back to original position
-				SetBoardAndTile(DraggingFrom, DraggingCell);
+				// Move from board
+				if (!targetCell.IsMovable())
+				{
+					// Cannot swap with immovable object, spring back to original position
+					SetBoardAndTile(DraggingFrom, DraggingCell);
+				}
+				else
+				{
+					// There are something there and is movable, swap them
+					SetBoardAndTile(DraggingFrom, targetCell);
+					SetBoardAndTile(pos, DraggingCell);
+				}
 			}
 			else
 			{
-				// If target is not empty space and not wall, swap two items
-				SetBoardAndTile(DraggingFrom, targetCell);
-				SetBoardAndTile(pos, DraggingCell);
+				// Move from toolbox but dropped on something. Discard it.
+				TheBoard.ReturnTool(DraggingCell);
 			}
 		}
 		else
@@ -418,8 +386,11 @@ public class BoardScript : MonoBehaviour,
 			// Drop outside board, try to return the item to toolbox
 			if (!TheBoard.ReturnTool(DraggingCell))
 			{
-				// Item cannot be returned, spring back to original position
-				SetBoardAndTile(DraggingFrom, DraggingCell);
+				// Item cannot be returned, spring back to original position (if there is)
+				if (DraggingFrom.x != -999)
+				{
+					SetBoardAndTile(DraggingFrom, DraggingCell);
+				}
 			}
 		}
 		DragIcon.gameObject.SetActive(false);
@@ -467,7 +438,6 @@ public class BoardScript : MonoBehaviour,
 			if (!IsRunning)
 			{
 				SimulationTime = 0;
-				SimulationStartWallTime = Time.time;
 			}
 			IsRunning = true;
 			IsPausing = false;
@@ -494,73 +464,6 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
-		TheBoard.ForEachCell((x, y, cell) =>
-		{
-			TMAnimated.SetTile(new Vector3Int(x, y, 0), null);
-		});
-	}
-	#endregion
-
-	#region Cell to Unity Object
-	/// <summary>
-	/// Find the sprite index of a certain item.
-	/// </summary>
-	/// <param name="cell">The item.</param>
-	/// <returns>The sprite index, -1 if not applicable for whatever reason.</returns>
-	private int CellToSpriteIndex(Board.Cell cell)
-	{
-		switch(cell.type)
-		{
-			case Board.CellType.GENERATOR:
-				return (int)BoardObjects.GEN_0 + cell.param;
-			case Board.CellType.MIRROR:
-				return (int)BoardObjects.MIRROR_HORIZONTAL + cell.param;
-			case Board.CellType.PROCESS:
-				return (int)BoardObjects.PROCESS_SPLIT;
-			case Board.CellType.SLUICE:
-				return (int)BoardObjects.SLUICE_UP + cell.param;
-			case Board.CellType.TARPIT:
-				return (int)BoardObjects.TARPIT_PLUS + cell.param;
-			case Board.CellType.INPUT:
-				return (int)BoardObjects.INPUT_UP + cell.param;
-			case Board.CellType.OUTPUT:
-				return (int)BoardObjects.OUTPUT1;
-			case Board.CellType.WALL:
-				return (int)BoardObjects.WALL;
-			default:
-				return -1;
-		}
-	}
-
-	/// <summary>
-	/// Find the corresponding Sprite of a certain item.
-	/// </summary>
-	/// <param name="cell">The item.</param>
-	/// <returns>The Sprite.</returns>
-	private Sprite CellToSprite(Board.Cell cell)
-	{
-		int index = CellToSpriteIndex(cell);
-		if (index == -1) return null;
-		return SpriteTools[index];
-	}
-
-	/// <summary>
-	/// Find the corresponding Tile of a ceratin item.
-	/// </summary>
-	/// <param name="cell">The item.</param>
-	/// <returns>The Tile.</returns>
-	private Tile CellToTile(Board.Cell cell)
-	{
-		int index = CellToSpriteIndex(cell);
-		if (index == -1) return null;
-		return SpriteToTile(SpriteTools[index]);
-	}
-
-	private Tile SpriteToTile(Sprite sprite)
-	{
-		Tile theTile = ScriptableObject.CreateInstance<Tile>();
-		theTile.sprite = sprite;
-		return theTile;
 	}
 	#endregion
 

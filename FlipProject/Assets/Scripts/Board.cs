@@ -15,6 +15,9 @@ public class Board
 		SLUICE,
 		PROCESS,
 		TARPIT,
+		MODIFIER_BOOLEAN,
+		MODIFIER_COMPARE,
+		MODIFIER_PARITY,
 		INPUT,
 		OUTPUT,
 		WALL,
@@ -30,6 +33,9 @@ public class Board
 			/* SLUICE */    4,
 			/* PROCESS */   1,
 			/* TARPIT */    5,
+			/* MODIFIER_BOOLEAN */ 2,
+			/* MODIFIER_COMPARE */ 6,
+			/* MODIFIER_PARITY */  2,
 			/* INPUT */     4,
 			/* OUTPUT */    1,
 			/* WALL */      1,
@@ -66,6 +72,11 @@ public class Board
 		public bool IsEmpty()
 		{
 			return type == CellType.EMPTY;
+		}
+
+		public bool IsMovable()
+		{
+			return !IsEmpty() && type != CellType.WALL;
 		}
 
 		public override string ToString()
@@ -524,7 +535,7 @@ public class Board
 	public List<int> InputPreview()
 	{
 		if (CurrentTime < 0) return new List<int>();
-		return input.Slice(InputIndex + 1).ToList();
+		return input.Subsequence(InputIndex + 1).ToList();
 	}
 
 	// Recent output to be displayed on screen

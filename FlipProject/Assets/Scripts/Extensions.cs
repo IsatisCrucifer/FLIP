@@ -30,12 +30,12 @@ public static class Extensions
 
 	#region IEnumerable Extensions
 	// cf. https://stackoverflow.com/questions/20678653/
-	public static IEnumerable<T> Slice<T>(this IEnumerable<T> source, int from = 0, int to = -1)
+	public static IEnumerable<T> Slice<T>(this IEnumerable<T> source, int from = 0, int to = 0)
 	{
 		int srcCount = source.Count();
 		if (from < 0) from += srcCount;
 		from = Math.Min(from, srcCount);
-		if (to == -1)
+		if (to == 0)
 		{
 			return source.Skip(from);
 		}
@@ -45,6 +45,17 @@ public static class Extensions
 			to = Math.Min(to, srcCount);
 			return source.Take(to).Skip(from);
 		}
+	}
+
+	public static IEnumerable<T> Subsequence<T>(this IEnumerable<T> source, int from = 0, int count = -1)
+	{
+		int srcCount = source.Count();
+		if (from < 0) from += srcCount;
+		from = Math.Min(from, srcCount);
+		if (count < 0)
+			return source.Skip(from);
+		else
+			return source.Skip(from).Take(count);
 	}
 	#endregion
 
