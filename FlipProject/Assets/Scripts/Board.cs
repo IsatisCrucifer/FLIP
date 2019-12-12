@@ -275,7 +275,10 @@ public class Board
 	/// <returns>Whether the item is successfully returned.</returns>
 	public bool ReturnTool(Board.Cell cell)
 	{
-		return cell.type != CellType.INPUT && cell.type != CellType.OUTPUT && cell.type != CellType.WALL;
+		for (int i = 0; i < Tools.Count; i++)
+			if (Tools[i].type == cell.type)
+				return true;
+		return false;
 	}
 
 	public bool IsInBound(int x, int y)

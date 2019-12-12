@@ -16,21 +16,22 @@ public class BoardScript : MonoBehaviour,
 	// Unity UI Objects
 	private struct ToolGameObjects
 	{
-		public GameObject GOTool;
-		public Image ImageIcon;
+		public GameObject ToolObject;
+		public Image Icon;
 	}
 	private List<ToolGameObjects> LGOTools;
 
-	private Camera MainCamera;
-	private Tilemap TMBoard;
-
-	private Image ImageRunButton, ImageStopButton;
-	private Transform DragIcon;
-	private GameObject GOPhotonTemplate;
-	private Transform PhotonScaler;
 	private Dictionary<int, GameObject> GOPhotons;
 
+	// Properties should be set via Inspector
+	public Camera MainCamera;
+	public Tilemap BoardTilemap;
+	public GameObject Toolbox;
+	public Image RunButton, StopButton;
+	public Transform DragIcon;
+	public Transform PhotonScaler;
 	public DialogScript TheDialog;
+	public GameObject PhotonPrefab;
 
 	// The Sprite
 	Sprite[] SpritePhotons;
@@ -55,63 +56,64 @@ public class BoardScript : MonoBehaviour,
 	private void SetBoardAndTile(Vector2Int pos, Board.Cell cell)
 	{
 		TheBoard[pos] = cell;
-		TMBoard.RefreshTile((Vector3Int)pos);
+		BoardTilemap.RefreshTile((Vector3Int)pos);
 	}
 
 	#region Monobehaviour callbacks
+
 	void Awake()
 	{
-#if UNITY_EDITOR
 		// Check only in editor if all references are all set
-		do
+		if (Application.isPlaying && Application.isEditor)
 		{
-			if (TheDialog is null)
+			bool Check = true;
+
+			// Using reflection to yank out all public instance fields declared here
+			foreach (var fi in GetType().GetFields(
+				System.Reflection.BindingFlags.Public |
+				System.Reflection.BindingFlags.Instance |
+				System.Reflection.BindingFlags.DeclaredOnly))
 			{
-				Debug.LogError($"TheDialog is not set in {gameObject.name}!");
-				break;
+				// And is a Unity object
+				if (typeof(Object).IsAssignableFrom(fi.FieldType))
+				{
+					if (fi.GetValue(this).Equals(null))
+					{
+						Debug.LogError($"{fi.Name} is not set in {gameObject.name}");
+						Check = false;
+					}
+				}
 			}
-			return;
-		} while(false);
-		UnityEditor.EditorApplication.isPlaying = false;
-#endif
+
+			// If anything is wrong, stop playing
+			if (!Check)
+			{
+				UnityEditor.EditorApplication.isPlaying = false;
+			}
+		}
 	}
 
 	void Start()
 	{
 		// Finding all Unity GameObjects we need.
-		GameObject GOToolbox = GameObject.Find("Toolbox");
 		LGOTools = new List<ToolGameObjects>();
-		foreach (Transform t in GOToolbox.transform)
+		foreach (Transform t in Toolbox.transform)
 		{
 			LGOTools.Add(new ToolGameObjects
 			{
-				GOTool = t.gameObject,
-				ImageIcon = t.Find("Icon").GetComponent<Image>(),
-				//TextAmount = t.Find("Amount").GetComponent<Text>(),
+				ToolObject = t.gameObject,
+				Icon = t.Find("Icon").GetComponent<Image>(),
 			});
 		}
 
 		SpritePhotons = Resources.LoadAll<Sprite>("Sprites/Photon");
 		SpriteButtons = Resources.LoadAll<Sprite>("Sprites/RunImage");
 
-		MainCamera = GameObject.Find("Main Camera").GetComponent<Camera>();
-
-		TMBoard = GameObject.Find("Grid/BoardTilemap").GetComponent<Tilemap>();
-
-		ImageRunButton = GameObject.Find("RunButton").GetComponent<Image>();
-		ImageStopButton = GameObject.Find("StopButton").GetComponent<Image>();
-		GOPhotonTemplate = GameObject.Find("Photon Template");
-		PhotonScaler = GOPhotonTemplate.transform.parent;
-		DragIcon = GameObject.Find("DragIcon").transform;
-
 		GOPhotons = new Dictionary<int, GameObject>();
 
 		// Get the mockup level if no level is set
 		if (levelAsset is null)
 			levelAsset = Resources.Load<TextAsset>("Level/Mockup");
-
-		// TheDialog = GameObject.Find("DialogCanvas").GetComponent<DialogScript>();
-		System.Diagnostics.Debug.Assert(TheDialog is null is false, "");
 
 		LoadLevel();
 	}
@@ -142,10 +144,8 @@ public class BoardScript : MonoBehaviour,
 					GameObject GOThisPhoton;
 					if (!GOPhotons.ContainsKey(kv.Key))
 					{
-						GOThisPhoton = Instantiate(GOPhotonTemplate);
+						GOThisPhoton = Instantiate(PhotonPrefab, PhotonScaler);
 						GOThisPhoton.SetActive(true);
-						GOThisPhoton.transform.localScale = new Vector3(2, 2, 1);
-						GOThisPhoton.transform.SetParent(PhotonScaler);
 						GOThisPhoton.GetComponent<SpriteRenderer>().sortingOrder = kv.Key;
 						GOPhotons[kv.Key] = GOThisPhoton;
 						//Debug.Log($"Generated new UI Object Photon {kv.Key}");
@@ -193,11 +193,11 @@ public class BoardScript : MonoBehaviour,
 		{
 			if (i >= TheBoard.Tools.Count)
 			{
-				LGOTools[i].GOTool.SetActive(false);
+				LGOTools[i].ToolObject.SetActive(false);
 			}
 			else
 			{
-				LGOTools[i].ImageIcon.sprite = BoardTile.CellToSprite(TheBoard.Tools[i]);
+				LGOTools[i].Icon.sprite = BoardTile.CellToSprite(TheBoard.Tools[i]);
 			}
 		}
 
@@ -206,7 +206,7 @@ public class BoardScript : MonoBehaviour,
 		TheBoard.ForEachCell((x, y, cell)=>
 		{
 			BoardTile tile = ScriptableObject.CreateInstance<BoardTile>();
-			TMBoard.SetTile(new Vector3Int(x, y, 0), tile);
+			BoardTilemap.SetTile(new Vector3Int(x, y, 0), tile);
 		});
 
 		SimulationTime = -1;
@@ -269,7 +269,7 @@ public class BoardScript : MonoBehaviour,
 		//Debug.LogFormat("FindPosition: Mouse position: {0}", eventData.position);
 		// Check for toolboxes
 		int toolID = LGOTools.FindIndex(
-			toolbox => eventData.hovered.FindIndex(hover => toolbox.GOTool == hover) != -1
+			toolbox => eventData.hovered.FindIndex(hover => toolbox.ToolObject == hover) != -1
 		);
 		//Debug.LogFormat("FindPosition: Tool {0}", toolID);
 		if (toolID != -1)
@@ -278,7 +278,7 @@ public class BoardScript : MonoBehaviour,
 			return new BoardPosition { place = BoardPosition.Place.TOOLBOX, x = toolID };
 		}
 		// Check for board
-		Vector3Int mousePosOnBoard = TMBoard.WorldToCell(MainCamera.ScreenToWorldPoint(eventData.position));
+		Vector3Int mousePosOnBoard = BoardTilemap.WorldToCell(MainCamera.ScreenToWorldPoint(eventData.position));
 		//Debug.LogFormat("FindPosition: Board {0}", mousePosOnBoard);
 		if (TheBoard.IsInBound(mousePosOnBoard.x, mousePosOnBoard.y))
 		{
@@ -441,14 +441,14 @@ public class BoardScript : MonoBehaviour,
 			}
 			IsRunning = true;
 			IsPausing = false;
-			ImageRunButton.sprite = SpriteButtons[1];
-			ImageStopButton.sprite = SpriteButtons[2];
+			RunButton.sprite = SpriteButtons[1];
+			StopButton.sprite = SpriteButtons[2];
 			TheBoard.Start(42);
 		}
 		else
 		{
 			IsPausing = true;
-			ImageRunButton.sprite = SpriteButtons[0];
+			RunButton.sprite = SpriteButtons[0];
 		}
 	}
 
@@ -457,8 +457,8 @@ public class BoardScript : MonoBehaviour,
 		if (!IsRunning) return;
 		IsRunning = IsPausing = false;
 		TheBoard.Stop();
-		ImageRunButton.sprite = SpriteButtons[0];
-		ImageStopButton.sprite = SpriteButtons[3];
+		RunButton.sprite = SpriteButtons[0];
+		StopButton.sprite = SpriteButtons[3];
 		foreach (var kv in GOPhotons)
 		{
 			Destroy(kv.Value);
