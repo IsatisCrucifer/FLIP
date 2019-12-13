@@ -33,7 +33,10 @@ public class DialogScript : MonoBehaviour, IPointerClickHandler
 	
 	void Update()
 	{
+		if (Input.GetKeyDown("space") || Input.GetKeyDown("return")) playerClicked = true;
+
 		if (!RTNextArrow.gameObject.activeInHierarchy) return;
+
 		float fracTime = (Time.time % 0.5f) * 2;
 		if (fracTime < .5f)
 			RTNextArrow.anchoredPosition3D = RTNextArrow.anchoredPosition3D.SetY(40 + 20 * fracTime);
