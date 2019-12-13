@@ -1,0 +1,12 @@
+--[[
+API:
+ AddGroup(string display)
+ AddLevel(int number, string levelIdentifier)
+]]
+
+AddGroup("第一章：新來乍到")
+AddLevel(1, "Intro")
+AddLevel(2, "Sluice")
+AddLevel(3, "Splitter")
+AddGroup("第二章：")
+

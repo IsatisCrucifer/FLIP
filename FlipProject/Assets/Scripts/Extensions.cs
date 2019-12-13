@@ -28,6 +28,40 @@ public static class Extensions
 	}
 	#endregion
 
+	#region Common check for Monobehaviors having Inspector public fields
+	public static void CheckInspectorConnection<T>(this T controlScript) where T : MonoBehaviour
+	{
+		// Check only in editor if all references are all set
+		if (Application.isPlaying && Application.isEditor)
+		{
+			bool Check = true;
+
+			// Using reflection to yank out all public instance fields declared here
+			foreach (var fi in controlScript.GetType().GetFields(
+				System.Reflection.BindingFlags.Public |
+				System.Reflection.BindingFlags.Instance |
+				System.Reflection.BindingFlags.DeclaredOnly))
+			{
+				// And is a Unity object
+				if (typeof(UnityEngine.Object).IsAssignableFrom(fi.FieldType))
+				{
+					if (fi.GetValue(controlScript).Equals(null))
+					{
+						Debug.LogError($"{fi.Name} is not set in {controlScript.gameObject.name}");
+						Check = false;
+					}
+				}
+			}
+
+			// If anything is wrong, stop playing
+			if (!Check)
+			{
+				UnityEditor.EditorApplication.isPlaying = false;
+			}
+		}
+	}
+	#endregion
+
 	#region IEnumerable Extensions
 	// cf. https://stackoverflow.com/questions/20678653/
 	public static IEnumerable<T> Slice<T>(this IEnumerable<T> source, int from = 0, int to = 0)

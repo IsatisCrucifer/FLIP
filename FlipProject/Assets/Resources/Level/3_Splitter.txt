@@ -1,0 +1,43 @@
+-- 1-3 Intro to splitter
+
+SetSize(12)
+AddTool("-")
+AddTool("^")
+AddTool("X")
+SetPreset([[
+............
+............
+..i.........
+............
+............
+......X.....
+............
+............
+............
+.........o..
+............
+............
+]])
+
+function GetIO(randomizer)
+	local input, output
+	input = {}
+	output = {}
+	for i = 1, 20 do
+		local value = randomizer(10)
+		table.insert(input, value)
+		table.insert(output, value)
+		table.insert(output, value)
+	end
+	return input, output
+end
+
+TargetDescription = [[利用分析器將每個輸入複製為兩份到輸出。]]
+
+BeforeLevelDialog = ""
+
+AfterLevelDialog = [=[
+[name=莫妮卡]看起來你上手的很快嘛！[w]
+我這裡也快要告一個段落了。[w]
+]=]
+

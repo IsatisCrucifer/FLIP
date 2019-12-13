@@ -1,0 +1,45 @@
+-- 1-1 Intro to mirror
+
+SetSize(12)
+AddTool("-")
+SetPreset([[
+............
+............
+..i...\.....
+............
+............
+............
+............
+............
+............
+.........o..
+............
+............
+]])
+
+function GetIO(randomizer)
+	local input, output
+	input = {}
+	output = {}
+	for i = 1, 20 do
+		local value = randomizer(10)
+		table.insert(input, value)
+		table.insert(output, value)
+	end
+	return input, output
+end
+
+TargetDescription = [[使用鏡子將輸入送到輸出。]]
+
+BeforeLevelDialog = [=[
+[name=莫妮卡]啊，你就是那個新研究員吧！歡迎歡迎。叫我莫妮卡就好。[w]
+雖然對你有點不好意思，不過我手上正有個研究還沒完成，[w]
+暫時還不能幫你詳細介紹。[w]
+不過你可以先參照我的研究筆記熟悉一下～[w]
+[name=]你有點莫名奇妙的接過了一疊研究筆記。[w]
+]=]
+
+AfterLevelDialog = [=[
+[name=]看起來這部份不難理解。你翻到筆記的下一頁。[w]
+]=]
+

@@ -4,13 +4,25 @@ This is a Lua script.
 API:
 SetSize(number size):
 	Set board size. Should be called before SetPreset.
-AddTool(string object, number count):
+AddTool(string object):
 	Add a tool for this level to use.
 	Use the following shorthands for object.
 SetPreset(string board)
 	A multiline string describe the board.
 	Use the following shorthand for each cell.
 	Empty line will be ignored.
+
+Raw values:
+BeforeLevelDialog:
+	Set the dialog before level start.
+AfterLevelDialog:
+	Set the dialog after level completed.
+
+Dialog primitives:
+[name=<name>]	Set speaker name. It will occupy the first line.
+				The name being set will persist until changed.
+				Leave <name> empty to cancel.
+[w]				Wait for player to click.
 
 Implementation:
 GetIO(function randomizer)

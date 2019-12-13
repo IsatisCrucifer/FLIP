@@ -1,0 +1,37 @@
+-- 1-2 Intro to sluice
+
+SetSize(12)
+AddTool("^")
+SetPreset([[
+............
+............
+..i...v.....
+............
+............
+............
+............
+............
+............
+.........o..
+............
+............
+]])
+
+function GetIO(randomizer)
+	local input, output
+	input = {}
+	output = {}
+	for i = 1, 20 do
+		local value = randomizer(10)
+		table.insert(input, value)
+		table.insert(output, value)
+	end
+	return input, output
+end
+
+TargetDescription = [[使用單向管道將輸入送到輸出。]]
+
+BeforeLevelDialog = ""
+
+AfterLevelDialog = ""
+

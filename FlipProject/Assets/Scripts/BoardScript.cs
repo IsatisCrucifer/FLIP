@@ -2,16 +2,18 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using UnityEngine.SceneManagement;
 using UnityEngine.Tilemaps;
+using UnityEngine.UI;
 
 public class BoardScript : MonoBehaviour,
 	IPointerDownHandler, IPointerClickHandler,
 	IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-	// Possible public Unity interface
+	// Current level. Set by LevelSelectControl.
 	public static TextAsset levelAsset = null;
+	public static string levelId = null;
 
 	// Unity UI Objects
 	private struct ToolGameObjects
@@ -63,34 +65,7 @@ public class BoardScript : MonoBehaviour,
 
 	void Awake()
 	{
-		// Check only in editor if all references are all set
-		if (Application.isPlaying && Application.isEditor)
-		{
-			bool Check = true;
-
-			// Using reflection to yank out all public instance fields declared here
-			foreach (var fi in GetType().GetFields(
-				System.Reflection.BindingFlags.Public |
-				System.Reflection.BindingFlags.Instance |
-				System.Reflection.BindingFlags.DeclaredOnly))
-			{
-				// And is a Unity object
-				if (typeof(Object).IsAssignableFrom(fi.FieldType))
-				{
-					if (fi.GetValue(this).Equals(null))
-					{
-						Debug.LogError($"{fi.Name} is not set in {gameObject.name}");
-						Check = false;
-					}
-				}
-			}
-
-			// If anything is wrong, stop playing
-			if (!Check)
-			{
-				UnityEditor.EditorApplication.isPlaying = false;
-			}
-		}
+		this.CheckInspectorConnection();
 	}
 
 	void Start()
@@ -169,6 +144,12 @@ public class BoardScript : MonoBehaviour,
 						{
 							Debug.Log("Level Complete!");
 							StopSimulation();
+							if (!(levelId is null))
+							{
+								LevelSelectControl.currentSave.SetCleared(levelId);
+								LevelSelectControl.currentSave.Save();
+							}
+							SceneManager.LoadScene("LevelSelect");
 						});
 					}
 				}
