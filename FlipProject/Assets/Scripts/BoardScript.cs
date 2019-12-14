@@ -29,15 +29,14 @@ public class BoardScript : MonoBehaviour,
 	public Camera MainCamera;
 	public Tilemap BoardTilemap;
 	public GameObject Toolbox;
-	public Image RunButton, StopButton;
 	public Transform DragIcon;
 	public Transform PhotonScaler;
 	public DialogScript TheDialog;
 	public GameObject PhotonPrefab;
+	public Toggle PlayToggle, PauseToggle, StopToggle;
 
 	// The Sprite
 	Sprite[] SpritePhotons;
-	Sprite[] SpriteButtons;
 
 	// The Board & Gamestate
 	private Board TheBoard;
@@ -82,7 +81,6 @@ public class BoardScript : MonoBehaviour,
 		}
 
 		SpritePhotons = Resources.LoadAll<Sprite>("Sprites/Photon");
-		SpriteButtons = Resources.LoadAll<Sprite>("Sprites/RunImage");
 
 		GOPhotons = new Dictionary<int, GameObject>();
 
@@ -412,24 +410,38 @@ public class BoardScript : MonoBehaviour,
 		SimulationSpeed = speed;
 	}
 
-	public void StartSimulation()
+	public void PlayButtonToggle(bool state)
 	{
-		if (!IsRunning || IsPausing)
+		// Reject glitch state
+		if (IsRunning == state) return;
+
+		if (state == true)
 		{
-			if (!IsRunning)
-			{
-				SimulationTime = 0;
-			}
-			IsRunning = true;
-			IsPausing = false;
-			RunButton.sprite = SpriteButtons[1];
-			StopButton.sprite = SpriteButtons[2];
-			TheBoard.Start(42);
+			StartSimulation();
 		}
 		else
 		{
-			IsPausing = true;
-			RunButton.sprite = SpriteButtons[0];
+			StopSimulation();
+		}
+	}
+
+	private void StartSimulation()
+	{
+		SimulationTime = 0;
+		IsRunning = true;
+		IsPausing = false;
+		TheBoard.Start(42);
+	}
+
+	public void PauseSimulation()
+	{
+		if (!IsRunning)
+		{
+			PauseToggle.SetIsOnWithoutNotify(false);
+		}
+		else
+		{
+			IsPausing = !IsPausing;
 		}
 	}
 
@@ -437,9 +449,10 @@ public class BoardScript : MonoBehaviour,
 	{
 		if (!IsRunning) return;
 		IsRunning = IsPausing = false;
+		PlayToggle.SetIsOnWithoutNotify(false);
+		PauseToggle.SetIsOnWithoutNotify(false);
+		StopToggle.SetIsOnWithoutNotify(false);
 		TheBoard.Stop();
-		RunButton.sprite = SpriteButtons[0];
-		StopButton.sprite = SpriteButtons[3];
 		foreach (var kv in GOPhotons)
 		{
 			Destroy(kv.Value);
