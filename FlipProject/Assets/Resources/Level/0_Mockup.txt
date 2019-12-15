@@ -70,16 +70,16 @@ SetPreset([[
 ]])
 ]==]
 SetPreset([[
-......#####.
-.i.\.#01234#
-..vXv#56789#
-/.+.<o#####.
 ............
-..>v.^<.....
-\.X..>^ ....
+.i.\..01234.
+..vXv.56789.
+/.+.X\......
+............
+..>v........
+\.X.........
 ..>*.../\...
-.....^./\\..
-...>...\//..
+.....>./\\..
+.....o.\//..
 .......\/...
 ............
 ]])
@@ -91,23 +91,17 @@ function GetIO(randomizer)
 	for i = 1, 20 do
 		local value = randomizer(10)
 		table.insert(input, value)
-		table.insert(output, value * value * 4)
+		table.insert(output, value)
 	end
 	return input, output
 end
 
 BeforeLevelDialog = [=[
-[name=依莎緹絲]哈囉！這是測試沙盒。
-This is a test sandbox.[w]
-這是第二頁。
-第三行。[w]
-[name=]現在沒有名字了。[w]
-One
-Two
-Three![w]
+[name=莫妮卡]哈囉！這是測試沙盒。
+你可以在這裡嘗試各種組合。[w]
+有一部份預計出現的元件尚未實裝，
+還請多多包涵 :3[w]
 ]=]
 
-AfterLevelDialog = [=[
-[name=依莎緹絲]你做的很好！[w]
-]=]
+AfterLevelDialog = ""
 

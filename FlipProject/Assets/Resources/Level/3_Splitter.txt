@@ -23,11 +23,10 @@ function GetIO(randomizer)
 	local input, output
 	input = {}
 	output = {}
-	for i = 1, 20 do
-		local value = randomizer(10)
-		table.insert(input, value)
-		table.insert(output, value)
-		table.insert(output, value)
+	for i = 0, 9 do
+		table.insert(input, i)
+		table.insert(output, i)
+		table.insert(output, i)
 	end
 	return input, output
 end

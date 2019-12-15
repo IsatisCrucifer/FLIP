@@ -86,7 +86,7 @@ public class BoardScript : MonoBehaviour,
 
 		// Get the mockup level if no level is set
 		if (levelAsset is null)
-			levelAsset = Resources.Load<TextAsset>("Level/Mockup");
+			levelAsset = Resources.Load<TextAsset>("Level/0_Mockup");
 
 		LoadLevel();
 	}
@@ -147,7 +147,7 @@ public class BoardScript : MonoBehaviour,
 								LevelSelectControl.currentSave.SetCleared(levelId);
 								LevelSelectControl.currentSave.Save();
 							}
-							ExitLevel();
+							SceneManager.LoadScene("LevelSelect");
 						});
 					}
 				}
@@ -458,11 +458,6 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
-	}
-
-	public void ExitLevel()
-	{
-		SceneManager.LoadScene("LevelSelect");
 	}
 	#endregion
 
