@@ -1,4 +1,4 @@
-# FLIP the game #
+# FLIP project #
 
 This game is my first mid-scale Unity project, and is a practice project when I was learning Unity at lccnet.
 
