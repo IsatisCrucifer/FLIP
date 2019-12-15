@@ -147,7 +147,7 @@ public class BoardScript : MonoBehaviour,
 								LevelSelectControl.currentSave.SetCleared(levelId);
 								LevelSelectControl.currentSave.Save();
 							}
-							SceneManager.LoadScene("LevelSelect");
+							ExitLevel();
 						});
 					}
 				}
@@ -458,6 +458,11 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
+	}
+
+	public void ExitLevel()
+	{
+		SceneManager.LoadScene("LevelSelect");
 	}
 	#endregion
 
