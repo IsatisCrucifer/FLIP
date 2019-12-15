@@ -11,10 +11,6 @@ public class BoardScript : MonoBehaviour,
 	IPointerDownHandler, IPointerClickHandler,
 	IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-	// Current level. Set by LevelSelectControl.
-	public static TextAsset levelAsset = null;
-	public static string levelId = null;
-
 	// Unity UI Objects
 	private struct ToolGameObjects
 	{
@@ -86,8 +82,8 @@ public class BoardScript : MonoBehaviour,
 		GOPhotons = new Dictionary<int, GameObject>();
 
 		// Get the mockup level if no level is set
-		if (levelAsset is null)
-			levelAsset = Resources.Load<TextAsset>("Level/0_Mockup");
+		if (Global.levelAsset is null)
+			Global.levelAsset = Resources.Load<TextAsset>("Level/0_Mockup");
 
 		LoadLevel();
 	}
@@ -143,10 +139,10 @@ public class BoardScript : MonoBehaviour,
 						{
 							Debug.Log("Level Complete!");
 							StopSimulation();
-							if (!(levelId is null))
+							if (!(Global.levelId is null))
 							{
-								LevelSelectControl.currentSave.SetCleared(levelId);
-								LevelSelectControl.currentSave.Save();
+								Global.currentSave.SetCleared(Global.levelId);
+								Global.currentSave.Save();
 							}
 							SceneManager.LoadScene("LevelSelect");
 						});
@@ -166,7 +162,7 @@ public class BoardScript : MonoBehaviour,
 	/// </summary>
 	private void LoadLevel()
 	{
-		TheBoard = new Board(levelAsset.text);
+		TheBoard = new Board(Global.levelAsset.text);
 		BoardTile.Initialize(TheBoard);
 
 		for (int i = 0; i < LGOTools.Count; i++)

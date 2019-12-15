@@ -8,8 +8,6 @@ using MoonSharp.Interpreter;
 
 public class LevelSelectControl : MonoBehaviour
 {
-	public static SaveData currentSave;
-
 	// Unity Objects
 	public Transform ScrollContent;
 	public GameObject ChapterTitlePrefab, ChapterLevelContainerPrefab, LevelButtonPrefab;
@@ -18,9 +16,9 @@ public class LevelSelectControl : MonoBehaviour
 	{
 		this.CheckInspectorConnection();
 
-		if (currentSave == null)
+		if (Global.currentSave == null)
 		{
-			currentSave = new SaveData("TestSave.json");
+			Global.currentSave = new SaveData("TestSave.json");
 		}
 	}
 
@@ -46,7 +44,7 @@ public class LevelSelectControl : MonoBehaviour
 
 			GameObject LevelButton = Instantiate(LevelButtonPrefab, CurrentLevelContainer.transform);
 			LevelButton.GetComponentInChildren<Text>().text = levelNumber.ToString();
-			bool IsThisLevelCleared = currentSave.IsCleared(levelId);
+			bool IsThisLevelCleared = Global.currentSave.IsCleared(levelId);
 			LevelButton.GetComponent<Image>().color = IsThisLevelCleared ? Color.green : Color.red;
 			LevelButton.GetComponent<Button>().onClick.AddListener(() =>
 			{
@@ -58,8 +56,8 @@ public class LevelSelectControl : MonoBehaviour
 				}
 				else
 				{
-					BoardScript.levelAsset = asset;
-					BoardScript.levelId = levelId;
+					Global.levelAsset = asset;
+					Global.levelId = levelId;
 					SceneManager.LoadScene("BoardScreen");
 				}
 			});
