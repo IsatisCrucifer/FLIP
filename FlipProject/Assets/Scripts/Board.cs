@@ -233,6 +233,15 @@ public class Board
 		luaGetIO = luaEnvironment.Globals.Get("GetIO");
 	}
 
+	public string GetTargetDescription()
+	{
+		DynValue value = luaEnvironment.Globals.Get("TargetDescription");
+		if (value.Type != DataType.String)
+			return "";
+		else
+			return value.String;
+	}
+
 	public string GetBeforeLevelDialogScript()
 	{
 		DynValue value = luaEnvironment.Globals.Get("BeforeLevelDialog");

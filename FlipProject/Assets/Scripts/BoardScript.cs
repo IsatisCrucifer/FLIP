@@ -32,6 +32,7 @@ public class BoardScript : MonoBehaviour,
 	public Transform DragIcon;
 	public Transform PhotonScaler;
 	public DialogScript TheDialog;
+	public TargetDialog TheTargetDialog;
 	public GameObject PhotonPrefab;
 	public Toggle PlayToggle, PauseToggle, StopToggle;
 
@@ -458,6 +459,12 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
+	}
+
+	public void ShowTarget()
+	{
+		TheTargetDialog.SetTargetText(TheBoard.GetTargetDescription());
+		TheTargetDialog.Show();
 	}
 	#endregion
 
