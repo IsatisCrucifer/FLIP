@@ -31,6 +31,7 @@ public static class Extensions
 	#region Common check for Monobehaviors having Inspector public fields
 	public static void CheckInspectorConnection<T>(this T controlScript) where T : MonoBehaviour
 	{
+#if UNITY_EDITOR
 		// Check only in editor if all references are all set
 		if (Application.isPlaying && Application.isEditor)
 		{
@@ -59,6 +60,7 @@ public static class Extensions
 				UnityEditor.EditorApplication.isPlaying = false;
 			}
 		}
+#endif
 	}
 	#endregion
 
