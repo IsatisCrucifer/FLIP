@@ -242,6 +242,15 @@ public class Board
 			return value.String;
 	}
 
+	public string GetNote()
+	{
+		DynValue value = luaEnvironment.Globals.Get("Note");
+		if (value.Type != DataType.String)
+			return "";
+		else
+			return value.String;
+	}
+
 	public string GetBeforeLevelDialogScript()
 	{
 		DynValue value = luaEnvironment.Globals.Get("BeforeLevelDialog");

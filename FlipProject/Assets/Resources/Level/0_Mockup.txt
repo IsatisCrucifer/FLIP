@@ -81,6 +81,18 @@ end
 
 TargetDescription = [[沙盒無需輸出。]]
 
+Note = [=[
+一些亂寫的筆記，Just Monika!
+{NewTile,0}Zero!
+{Buttons,0}Play!
+很長很長很長很長很長很長很長很長很長很長的一行看看會不會換行
+很多
+很多
+很多
+很多
+看看會不會有捲軸
+]=]
+
 BeforeLevelDialog = [=[
 [name=莫妮卡]哈囉！這是測試沙盒。
 你可以在這裡嘗試各種組合。[w]

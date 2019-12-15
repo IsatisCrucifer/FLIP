@@ -46,7 +46,7 @@ public static class Extensions
 				// And is a Unity object
 				if (typeof(UnityEngine.Object).IsAssignableFrom(fi.FieldType))
 				{
-					if (fi.GetValue(controlScript).Equals(null))
+					if (fi.GetValue(controlScript)?.Equals(null) ?? true)
 					{
 						Debug.LogError($"{fi.Name} is not set in {controlScript.gameObject.name}");
 						Check = false;

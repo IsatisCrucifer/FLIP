@@ -28,6 +28,11 @@ function GetIO(randomizer)
 	return input, output
 end
 
+Note = [=[
+{NewTile,22}這是單向管道，所有進入這個管到的 FLIP 粒子皆會往同一方向離開。
+鏡子和單向管道構成了移動 FLIP 粒子的主要機關。
+]=]
+
 TargetDescription = [[使用單向管道將輸入送到輸出。]]
 
 BeforeLevelDialog = ""

@@ -31,12 +31,17 @@ function GetIO(randomizer)
 	return input, output
 end
 
-TargetDescription = [[�Q�Τ��R���N�C�ӿ�J�ƻs��������X�C]]
+Note = [=[
+{NewTile,52}這是分析器，可將一個 FLIP 粒子拆分為相同的兩個，並分別往兩個垂直射入方向離開。
+分析器的存在大大強化 FLIP 粒子的計算功能；粒子可以在不同地方同時進行運算。
+]=]
+
+TargetDescription = [[利用分析器將每個輸入複製為兩份到輸出。]]
 
 BeforeLevelDialog = ""
 
 AfterLevelDialog = [=[
-[name=���g�d]�ݰ_�ӧA�W�⪺�ܧֹ��I[w]
-�ڳo�̤]�֭n�i�@�Ӭq���F�C[w]
+[name=莫妮卡]看起來你上手的很快嘛！[w]
+我這裡也快要告一個段落了。[w]
 ]=]
 

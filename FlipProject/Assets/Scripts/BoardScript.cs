@@ -28,8 +28,10 @@ public class BoardScript : MonoBehaviour,
 	public Transform DragIcon;
 	public Transform PhotonScaler;
 	public DialogScript TheDialog;
+	public NotePanel TheNotePanel;
 	public TargetDialog TheTargetDialog;
 	public GameObject PhotonPrefab;
+	public Button NoteButton;
 	public Toggle PlayToggle, PauseToggle, StopToggle;
 
 	// The Sprite
@@ -137,7 +139,7 @@ public class BoardScript : MonoBehaviour,
 						TheDialog.SetDialog(TheBoard.GetAfterLevelDialogScript());
 						TheDialog.StartDialog(() =>
 						{
-							Debug.Log("Level Complete!");
+							//Debug.Log("Level Complete!");
 							StopSimulation();
 							if (!(Global.levelId is null))
 							{
@@ -193,8 +195,10 @@ public class BoardScript : MonoBehaviour,
 		if (beforeLevelDialog != "")
 		{
 			TheDialog.SetDialog(beforeLevelDialog);
-			TheDialog.StartDialog(() => { Debug.Log("Level start!"); });
+			TheDialog.StartDialog(() => { /*Debug.Log("Level start!");*/ });
 		}
+
+		NoteButton.gameObject.SetActive(TheBoard.GetNote() != "");
 	}
 
 	/// <summary>
@@ -455,6 +459,12 @@ public class BoardScript : MonoBehaviour,
 			Destroy(kv.Value);
 		}
 		GOPhotons.Clear();
+	}
+
+	public void ShowNote()
+	{
+		TheNotePanel.SetNote(TheBoard.GetNote());
+		TheNotePanel.Show();
 	}
 
 	public void ShowTarget()
